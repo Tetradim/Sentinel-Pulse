@@ -99,7 +99,7 @@ def get_demo_db():
     """Get in-memory database for demo mode."""
     global _demo_db
     if _demo_db is None:
-        _demo_db = InMemoryDatabase()
+        _demo_db = InMemoryDatabase(seed=True)
     return _demo_db
 
 class InMemoryCursor:
@@ -178,26 +178,24 @@ def _match_query(query, doc):
 
 class InMemoryDatabase:
     """In-memory database for demo mode."""
-    def __init__(self):
+    def __init__(self, seed: bool = False):
         self.tickers = InMemoryCollection()
         self.trades = InMemoryCollection()
         self.profits = InMemoryCollection()
         self.settings = InMemoryCollection()
         self.audit_logs = InMemoryCollection()
         
-        # Seed default tickers
-        import asyncio
-        loop = asyncio.get_event_loop()
+        # Only seed if explicitly requested (not during import in async context)
+        if seed:
+            self._seed()
+    
+    def _seed(self):
+        """Seed default data synchronously."""
         for sym in ["SPY", "QQQ", "AAPL", "NVDA"]:
-            loop.run_until_complete(
-                self.tickers.insert_one({"symbol": sym, "base_power": 100.0, "market": "US"})
-            )
-        # Seed default settings
+            self.tickers._docs.append({"symbol": sym, "base_power": 100.0, "market": "US"})
         for key, value in [("account_balance", 100000.0), ("cash_reserve", 10000.0), 
                          ("increment_step", 0.5), ("decrement_step", 0.5)]:
-            loop.run_until_complete(
-                self.settings.insert_one({"key": key, "value": value})
-            )
+            self.settings._docs.append({"key": key, "value": value})
 
 
 # yfinance

@@ -186,15 +186,9 @@ async def lifespan(application: FastAPI):
     # If demo forced, skip MongoDB entirely - don't even try to connect/ping
     if demo_forced:
         logger.info("DEMO_MODE set - using in-memory database")
-        try:
-            deps.db = deps.get_demo_db()
-            logger.info("Demo db assigned: %s", type(deps.db))
-        except Exception as e:
-            logger.error("Failed to get demo db: %s - %s", type(e).__name__, e)
-            raise
-        logger.info("Lifespan: About to yield (DEMO_MODE)")
+        deps.db = deps.get_demo_db()
+        logger.info("Demo db ready: %s", type(deps.db))
         yield
-        logger.info("Lifespan: After yield (DEMO_MODE)")
         return
     
     # Try to connect to MongoDB - only if not demo mode
