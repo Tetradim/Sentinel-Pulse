@@ -188,7 +188,9 @@ async def lifespan(application: FastAPI):
         logger.info("DEMO_MODE set - using in-memory database")
         deps.db = deps.get_demo_db()
         demo_forced = True
+        logger.info("Lifespan: About to yield (DEMO_MODE)")
         yield
+        logger.info("Lifespan: After yield (DEMO_MODE)")
         return
     
     # Try to connect to MongoDB - only if not demo mode
