@@ -38,7 +38,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
-Name: "uninstallicon"; Description: "Create Uninstall shortcut on desktop"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "launchapp"; Description: "Launch Sentinel Pulse after install"; GroupDescription: "Startup"; Flags: checkedonce
 
 [Files]
@@ -51,7 +50,7 @@ Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 Name: "{group}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"; Tasks: desktopicon
-Name: "{commondesktop}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"; Tasks: uninstallicon
+Name: "{commondesktop}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocName}"; ValueData: ""; Flags: uninsdeletevalue
