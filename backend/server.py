@@ -183,7 +183,15 @@ async def lifespan(application: FastAPI):
     # Check demo mode - use mock data if no MongoDB
     demo_forced = os.environ.get("DEMO_MODE", "").lower() in ("1", "true", "yes")
     
-    # Try to connect to MongoDB
+    # If demo forced, skip MongoDB entirely - don't even try to connect/ping
+    if demo_forced:
+        logger.info("DEMO_MODE set - using in-memory database")
+        deps.db = deps.get_demo_db()
+        demo_forced = True
+        yield
+        return
+    
+    # Try to connect to MongoDB - only if not demo mode
     # In packaged mode, skip MongoDB if not bundled
     mongo_works = True
     mongo_error = None
