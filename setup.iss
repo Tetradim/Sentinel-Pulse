@@ -64,8 +64,26 @@ Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; S
 ; Launch Sentinel Pulse if task selected
 Filename: "{app}\Setup-And-Launch.bat"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent shellexec; Tasks: launchapp; WorkingDir: "{app}"
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"
+
 [Code]
-// Create necessary directories
+// Delete desktop log file on uninstall
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DesktopPath, LogFile: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    DesktopPath := ExpandConstant('{userdesktop}');
+    LogFile := DesktopPath + '\sentinel_pulse.log';
+    
+    if FileExists(LogFile) then
+      DeleteFile(LogFile);
+  end;
+end;
+
+// Create necessary directories after installation
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   DataPath, LogPath: String;
@@ -74,9 +92,12 @@ begin
   begin
     DataPath := ExpandConstant('{app}\data\db');
     LogPath := ExpandConstant('{app}\logs');
-    
+
+    // Create data directory for MongoDB
     if not DirExists(DataPath) then
       CreateDir(DataPath);
+
+    // Create logs directory
     if not DirExists(LogPath) then
       CreateDir(LogPath);
   end;
@@ -88,6 +109,7 @@ var
   Version: String;
 begin
   Result := True;
+
   if RegQueryStringValue(HKCU, 'Software\{#MyAppPublisher}\{#MyAppName}', 'Version', Version) then
   begin
     if MsgBox('Sentinel Pulse is already installed. Continue anyway?', mbConfirmation, MB_YESNO) = IDNO then
