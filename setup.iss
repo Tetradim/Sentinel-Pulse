@@ -32,6 +32,7 @@ MinVersion=10.0.18362
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+DisableProgramGroupPage=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -46,8 +47,6 @@ Source: "Setup-And-Launch.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"
-Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
@@ -57,9 +56,6 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocName}\shell\open\command"; Valu
 Root: HKCU; Subkey: "Software\{#MyAppPublisher}\{#MyAppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
 
 [Run]
-; Install VC++ Redistributable silently
-Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Runtime..."; Flags: waituntilterminated; OnlyBelowVersion: 6.1
-
 ; Launch Sentinel Pulse if task selected
 Filename: "{app}\Setup-And-Launch.bat"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent shellexec; Tasks: launchapp; WorkingDir: "{app}"
 
@@ -78,18 +74,5 @@ begin
       CreateDir(DataPath);
     if not DirExists(LogPath) then
       CreateDir(LogPath);
-  end;
-end;
-
-// Check for existing installation
-function InitializeSetup(): Boolean;
-var
-  Version: String;
-begin
-  Result := True;
-  if RegQueryStringValue(HKCU, 'Software\{#MyAppPublisher}\{#MyAppName}', 'Version', Version) then
-  begin
-    if MsgBox('Sentinel Pulse is already installed. Continue anyway?', mbConfirmation, MB_YESNO) = IDNO then
-      Result := False;
   end;
 end;
