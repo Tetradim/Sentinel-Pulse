@@ -53,10 +53,7 @@ echo Starting Sentinel Pulse...
 :: Generate credential key
 set CREDENTIAL_KEY=sentinel-%RANDOM%-%TIME:~0,2%
 
-:: Show what we're setting
-echo Setting: DEMO_MODE=%DEMO_MODE% CREDENTIAL_KEY=*** (%MONGO_URL%)
-
-:: Write .env file
+:: Write .env file (so packaged app can read it)
 del .env 2>nul
 (
 echo CREDENTIAL_KEY=%CREDENTIAL_KEY%
@@ -68,16 +65,9 @@ if "%DEMO_MODE%"=="true" (
 )
 ) > .env
 
-:: Launch app with env vars - use /d to set working directory
-start "" /d "%CD%" /b "SentinelPulse.exe"
+:: Show what's being set
+echo Env: DEMO_MODE=%DEMO_MODE% MONGO_URL=%MONGO_URL%
 
-:: Wait for app to start
-timeout /t 2 /nobreak >nul
-echo  ========================================
-echo    Done! Opening browser...
-echo  ========================================
-start http://localhost:3000
-echo.
-echo  Press Ctrl+C to stop, then any key to exit...
-pause >nul
-taskkill /f /im SentinelPulse.exe >nul 2>&1
+:: Use cmd /k to preserve vars and run exe in same cmd context
+:: This runs the exe WITH the env vars set in the current session
+cmd /k "set DEMO_MODE=%DEMO_MODE% && set MONGO_URL=%MONGO_URL% && set CREDENTIAL_KEY=%CREDENTIAL_KEY% && SentinelPulse.exe"
