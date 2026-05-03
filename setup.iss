@@ -3,7 +3,7 @@
 ; Requires Inno Setup 6.0+
 
 #define MyAppName "Sentinel Pulse"
-#define MyAppVersion "1.0.0-beta"
+#define MyAppVersion "1.0.0"
 #define MyAppPublisher "Tetradim / SignalForge Lab"
 #define MyAppURL "https://github.com/Tetradim/Set-Trader"
 #define MyAppExeName "SentinelPulse.exe"
@@ -11,7 +11,6 @@
 #define MyAppAssocExt ".sentinel"
 
 [Setup]
-; Unique app ID - Generate new via Inno Setup > Tools > Generate GUID
 AppId={{8A3E4B2C-1D5F-6E7A-9B8C-0D1E2F3A4B5C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -23,99 +22,49 @@ AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-; License - add LICENSE.txt to project root
-; LicenseFile=LICENSE.txt
 OutputDir=dist
 OutputBaseFilename=SentinelPulse-Setup-{#MyAppVersion}
-; SetupIconFile=SentinelPulse.ico  ; Place SentinelPulse.ico in project root
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-; Minimum Windows version (Win 10 1903+)
 MinVersion=10.0.18362
-
-; Privileges
-PrivilegesRequired=lowest
-
-; Architecture
+PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-[CustomMessages]
-telemetryOptIn=Enable anonymous usage telemetry to help improve Sentinel Pulse
-
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
-Name: "autostart"; Description: "Start Sentinel Pulse on Windows login"; GroupDescription: "Startup Options"
-Name: "uninstallicon"; Description: "{cm:UninstallProgram,{#MyAppName}}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
-Name: "telemetry"; Description: "Send anonymous usage statistics"; GroupDescription: "Privacy"; Flags: unchecked
-Name: "mongodb"; Description: "Install MongoDB server"; GroupDescription: "Database"; Flags: unchecked
+Name: "launchapp"; Description: "Launch Sentinel Pulse after install"; GroupDescription: "Startup"; Flags: checkedonce
 
 [Files]
-; Main executable
 Source: "backend\dist\SentinelPulse\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; Auto-setup launcher
 Source: "Setup-And-Launch.bat"; DestDir: "{app}"; Flags: ignoreversion
-
-; Documentation
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion  ; Create CHANGELOG.md
-
-; Sample configuration
-Source: "backend\.env.example"; DestDir: "{app}"; Flags: ignoreversion; DestName: ".env.example"
-
-; VC++ Redistributable (silent install)
-Source: "backend\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall
 
 [Icons]
-; Main app (launches auto-setup which detects MongoDB)
 Name: "{group}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"; Tasks: desktopicon
-Name: "{commondesktop}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"; Tasks: uninstallicon
-Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"; Tasks: autostart
 
 [Registry]
-; File association for .sentinel config files
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocName}"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocName}"; ValueType: string; ValueName: ""; ValueData: "Sentinel Pulse Configuration"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocName}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocName}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
-
-; Store install info
 Root: HKCU; Subkey: "Software\{#MyAppPublisher}\{#MyAppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\{#MyAppPublisher}\{#MyAppName}"; ValueType: string; ValueName: "Version"; ValueData: "{#MyAppVersion}"
 
 [Run]
 ; Install VC++ Redistributable silently
-Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Runtime..."; Flags: waituntilterminated
-; Launch after install
-Filename: "{app}\Setup-And-Launch.bat"; Description: "Launch {#MyAppName} now"; Flags: nowait postinstall skipifsilent shellexec; WorkingDir: "{app}"
+Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Runtime..."; Flags: waituntilterminated; OnlyBelowVersion: 6.1
+
+; Launch Sentinel Pulse if task selected
+Filename: "{app}\Setup-And-Launch.bat"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent shellexec; Tasks: launchapp; WorkingDir: "{app}"
 
 [Code]
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  LogFile: String;
-begin
-  if CurUninstallStep = usPostUninstall then
-  begin
-    LogFile := ExpandConstant('{userdesktop}') + '\sentinel_pulse.log';
-    if FileExists(LogFile) then
-      DeleteFile(LogFile);
-  end;
-end;
-
-[UninstallDelete]
-Type: filesandordirs; Name: "{app}"
-
-[Code]
-// Create necessary directories after installation
+// Create necessary directories
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   DataPath, LogPath: String;
@@ -124,12 +73,9 @@ begin
   begin
     DataPath := ExpandConstant('{app}\data\db');
     LogPath := ExpandConstant('{app}\logs');
-
-    // Create data directory for MongoDB
+    
     if not DirExists(DataPath) then
       CreateDir(DataPath);
-
-    // Create logs directory
     if not DirExists(LogPath) then
       CreateDir(LogPath);
   end;
@@ -141,7 +87,6 @@ var
   Version: String;
 begin
   Result := True;
-
   if RegQueryStringValue(HKCU, 'Software\{#MyAppPublisher}\{#MyAppName}', 'Version', Version) then
   begin
     if MsgBox('Sentinel Pulse is already installed. Continue anyway?', mbConfirmation, MB_YESNO) = IDNO then
