@@ -42,8 +42,27 @@ logger.info("Python: %s", sys.version.split()[0])
 logger.info("Frozen: %s", getattr(sys, 'frozen', False))
 
 # Load .env file early so env vars are available
+# For packaged apps, look in the working directory (not exe dir)
 from dotenv import load_dotenv
-load_dotenv()
+from pathlib import Path
+
+# Determine the .env path based on whether we're packaged
+if getattr(sys, 'frozen', False):
+    # Running as packaged exe - look in CWD (where exe was launched from)
+    # or next to the exe in the app folder
+    env_paths = [
+        Path.cwd() / '.env',
+        Path(sys.executable).parent / '.env',
+    ]
+    for env_path in env_paths:
+        if env_path.exists():
+            load_dotenv(env_path)
+            logger.info(f"Loaded .env from: {env_path}")
+            break
+    else:
+        load_dotenv()  # fallback to default behavior
+else:
+    load_dotenv()
 
 logger.info("ENV loaded - DEMO_MODE: %s", os.environ.get("DEMO_MODE", ""))
 
