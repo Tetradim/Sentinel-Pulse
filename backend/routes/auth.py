@@ -330,8 +330,6 @@ async def get_roles():
 
 
 __all__ = ["router"]
-    token_type: str
-    user: dict
 
 
 @router.post("/auth/login", response_model=LoginResponse)
