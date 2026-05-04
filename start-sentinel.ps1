@@ -7,7 +7,15 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+
+# Get script directory - works both ways
+$ScriptDir = $PSScriptRoot
+if (-not $ScriptDir) {
+    $ScriptDir = Split-Path -Parent $PSCommandPath
+}
+if (-not $ScriptDir) {
+    $ScriptDir = $PWD
+}
 
 # Create error log early
 function Write-ErrorLog {
@@ -30,15 +38,38 @@ if (-not $SkipMongo) {
     
     # Check if MongoDB is running on port 27017
     $mongoRunning = Get-NetTCPConnection -LocalPort 27017 -ErrorAction SilentlyContinue
+    $mongoConn = $mongoRunning | Select-Object -First 1
     
-    if ($mongoRunning) {
+    if ($mongoConn) {
         Write-Host "  MongoDB is already running" -ForegroundColor Green
     } else {
-        # Try to start MongoDB
-        $mongod = Get-Command mongod -ErrorAction SilentlyContinue
+        # Try to start MongoDB - check multiple locations
+        $mongodPaths = @(
+            "mongod",  # PATH
+            "$env:ProgramFiles\MongoDB\Server\6.0\bin\mongod.exe",
+            "$env:ProgramFiles(x86)\MongoDB\Server\6.0\bin\mongod.exe",
+            "$ScriptDir\mongod.exe",
+            "$ScriptDir\..\mongodb\mongod.exe"
+        )
+        
+        $mongod = $null
+        foreach ($path in $mongodPaths) {
+            if ($path -and (Test-Path $path)) {
+                $mongod = $path
+                break
+            }
+        }
+        
+        # Try which as fallback
+        if (-not $mongod) {
+            $mongod = Get-Command mongod -ErrorAction SilentlyContinue | Select-Object -First 1
+        }
+        
         if ($mongod) {
-            Write-Host "  Starting MongoDB..."
-            Start-Process -FilePath "mongod" -ArgumentList "--dbpath $env:USERPROFILE\data\db" -WindowStyle Hidden
+            Write-Host "  Starting MongoDB from: $mongod"
+            $dbPath = "$ScriptDir\..\data\db"
+            if (-not (Test-Path $dbPath)) { New-Item -ItemType Directory -Path $dbPath -Force | Out-Null }
+            Start-Process -FilePath $mongod -ArgumentList "--dbpath $dbPath" -WindowStyle Hidden
             Start-Sleep -Seconds 3
             Write-Host "  MongoDB started" -ForegroundColor Green
         } else {
