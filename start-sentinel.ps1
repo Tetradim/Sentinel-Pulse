@@ -7,11 +7,20 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+
+# Create error log early
+function Write-ErrorLog {
+    param([string]$Message)
+    "$Message" | Out-File -FilePath "$env:USERPROFILE\Desktop\sentinel_pulse.log" -Append
+}
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Sentinel Pulse - Auto Start" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
+
+Write-ErrorLog "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') Starting Sentinel Pulse..."
 
 # 1. Check/Start MongoDB ------------------
 if (-not $SkipMongo) {
@@ -32,6 +41,7 @@ if (-not $SkipMongo) {
             Write-Host "  MongoDB started" -ForegroundColor Green
         } else {
             Write-Host "  ERROR: MongoDB not found - Sentinel Pulse requires MongoDB" -ForegroundColor Red
+            Write-ErrorLog "ERROR: MongoDB not found"
             exit 1
         }
     }
