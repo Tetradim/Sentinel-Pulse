@@ -191,8 +191,34 @@ class InMemoryDatabase:
     
     def _seed(self):
         """Seed default data synchronously."""
+        import uuid
+        # Seed default tickers with full schema
         for sym in ["SPY", "QQQ", "AAPL", "NVDA"]:
-            self.tickers._docs.append({"symbol": sym, "base_power": 100.0, "market": "US"})
+            self.tickers._docs.append({
+                "id": str(uuid.uuid4()),
+                "symbol": sym,
+                "base_power": 100.0,
+                "avg_days": 30,
+                "buy_offset": -3.0,
+                "buy_percent": True,
+                "buy_order_type": "limit",
+                "sell_offset": 3.0,
+                "sell_percent": True,
+                "sell_order_type": "limit",
+                "stop_offset": -6.0,
+                "stop_percent": True,
+                "stop_order_type": "limit",
+                "trailing_enabled": False,
+                "trailing_percent": 2.0,
+                "trailing_percent_mode": True,
+                "trailing_order_type": "limit",
+                "wait_day_after_buy": False,
+                "compound_profits": True,
+                "enabled": True,
+                "market": "US",
+                "sort_order": 0,
+            })
+        # Seed default settings
         for key, value in [("account_balance", 100000.0), ("cash_reserve", 10000.0), 
                          ("increment_step", 0.5), ("decrement_step", 0.5)]:
             self.settings._docs.append({"key": key, "value": value})
