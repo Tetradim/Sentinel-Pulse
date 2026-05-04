@@ -179,27 +179,9 @@ DEMO_MODE_ACTIVE = False
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     global DEMO_MODE_ACTIVE
+    DEMO_MODE_ACTIVE = False
     
-    # Check demo mode - use mock data if no MongoDB
-    demo_forced = os.environ.get("DEMO_MODE", "").lower() in ("1", "true", "yes")
-    
-    # If demo forced, skip MongoDB entirely - don't even try to connect/ping
-    if demo_forced:
-        logger.info("DEMO_MODE set - using in-memory database")
-        deps.db = deps.get_demo_db()
-        
-        # Broadcast tickers to frontend
-        tickers = await deps.db.tickers.find({}).to_list(100)
-        if tickers:
-            await deps.ws_manager.broadcast({"type": "TICKERS_LOADED", "tickers": tickers})
-            logger.info("Broadcast %d tickers to frontend", len(tickers))
-        
-        logger.info("Demo db ready: %s", type(deps.db))
-        yield
-        return
-    
-    # Try to connect to MongoDB - only if not demo mode
-    # In packaged mode, skip MongoDB if not bundled
+    # Always require MongoDB - no demo/in-memory mode
     mongo_works = True
     mongo_error = None
     
@@ -208,24 +190,18 @@ async def lifespan(application: FastAPI):
         from pathlib import Path
         mongo_exists = Path(sys._MEIPASS).joinpath("mongodb", "mongod.exe").exists()
         if not mongo_exists:
-            logger.info("Packaged mode - MongoDB not bundled, using demo mode")
-            demo_forced = True
+            raise RuntimeError("MongoDB is required but not bundled with this installation")
     
     try:
         await deps.db.command("ping")
     except Exception as e:
         mongo_error = str(e)
         mongo_works = False
-        logger.info("MongoDB ping failed: %s", e)
-
-    logger.info("mongo_works=%s, demo_forced=%s", mongo_works, demo_forced)
-    DEMO_MODE_ACTIVE = demo_forced or not mongo_works
     
-    if DEMO_MODE_ACTIVE:
-        logger.info("Demo mode: mongo_error=%s", mongo_error)
-        deps.db = deps.get_demo_db()
-        yield
-        return
+    if not mongo_works:
+        raise RuntimeError(f"MongoDB unavailable: {mongo_error}")
+    
+    logger.info("MongoDB connected")
     
     # Normal mode: create indexes
     try:

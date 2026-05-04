@@ -31,8 +31,8 @@ if (-not $SkipMongo) {
             Start-Sleep -Seconds 3
             Write-Host "  MongoDB started" -ForegroundColor Green
         } else {
-            Write-Host "  MongoDB not found - using demo mode" -ForegroundColor Yellow
-            $env:DEMO_MODE = "true"
+            Write-Host "  ERROR: MongoDB not found - Sentinel Pulse requires MongoDB" -ForegroundColor Red
+            exit 1
         }
     }
 }
