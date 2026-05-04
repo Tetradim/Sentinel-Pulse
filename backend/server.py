@@ -187,6 +187,13 @@ async def lifespan(application: FastAPI):
     if demo_forced:
         logger.info("DEMO_MODE set - using in-memory database")
         deps.db = deps.get_demo_db()
+        
+        # Broadcast tickers to frontend
+        tickers = await deps.db.tickers.find({}).to_list(100)
+        if tickers:
+            await deps.ws_manager.broadcast({"type": "TICKERS_LOADED", "tickers": tickers})
+            logger.info("Broadcast %d tickers to frontend", len(tickers))
+        
         logger.info("Demo db ready: %s", type(deps.db))
         yield
         return
