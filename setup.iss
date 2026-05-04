@@ -75,7 +75,7 @@ var
   DesktopPath, LogFile: String;
   ResultCode: Integer;
 begin
-  if CurUninstallStep = usPreUninstall then
+  if CurUninstallStep = usUninstall then
   begin
     // Kill SentinelPulse.exe if running
     Exec('taskkill', '/F /IM SentinelPulse.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
