@@ -1,6 +1,6 @@
 import { useStore } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Header } from './Header';
 import { WatchlistTab } from './tabs/WatchlistTab';
 import { PositionsTab } from './tabs/PositionsTab';
@@ -18,13 +18,11 @@ import { IncidentsOpsTab } from './tabs/IncidentsOpsTab';
 import { PortfolioAnalyticsTab } from './tabs/PortfolioAnalyticsTab';
 import { AdminIAMTab } from './tabs/AdminIAMTab';
 import { SLODashboardTab } from './tabs/SLODashboardTab';
-import { TradeLogSidebar } from './TradeLogSidebar';
-import { LayoutDashboard, Crosshair, History, ScrollText, Settings, Plug, Activity, Globe, Shield, List, Scale, BarChart3, Users, Server, Target } from 'lucide-react';
 import { PortfolioTab } from './tabs/PortfolioTab';
 import { TradeLogSidebar } from './TradeLogSidebar';
-import { LayoutDashboard, Crosshair, History, ScrollText, Settings, Plug, Activity, Globe, Wallet } from 'lucide-react';
 import { ErrorBoundary } from './ErrorBoundary';
 import { apiFetch } from '@/lib/api';
+import { LayoutDashboard, Crosshair, History, ScrollText, Settings, Plug, Activity, Globe, Wallet, ChevronLeft, ChevronRight, Shield, List, Scale, BarChart3, Users, Server, Target } from 'lucide-react';
 
 const TABS = [
   { id: 'watchlist', label: 'Watchlist', icon: LayoutDashboard },
@@ -51,6 +49,13 @@ export function Dashboard() {
   const setActiveTab = useStore((s) => s.setActiveTab);
   const setFxRates = useStore((s) => s.setFxRates);
   const setCurrencyDisplay = useStore((s) => s.setCurrencyDisplay);
+  const tabNavRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabNavRef.current) {
+      tabNavRef.current.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+    }
+  };
 
   // Pre-load FX rates and currency preference on app start so TickerCards
   // can convert prices immediately without requiring a visit to the Foreign tab.
@@ -76,29 +81,37 @@ export function Dashboard() {
         {/* Main content area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tab bar */}
-          <nav className="flex items-center gap-1 px-6 pt-4 pb-0 border-b border-border" data-testid="tab-bar">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  data-testid={`tab-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all
-                    ${active
-                      ? 'text-primary bg-card border border-b-0 border-border -mb-px'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                    }
-                  `}
-                >
-                  <Icon size={15} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="flex items-center pt-4 pb-0 border-b border-border">
+            <button onClick={() => scrollTabs('left')} className="p-2 text-muted-foreground hover:text-foreground shrink-0" title="Scroll left">
+              <ChevronLeft size={18} />
+            </button>
+            <nav ref={tabNavRef} className="flex items-center gap-1 px-2 overflow-x-auto scrollbar-hide" data-testid="tab-bar">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    data-testid={`tab-${tab.id}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap
+                      ${active
+                        ? 'text-primary bg-card border border-b-0 border-border -mb-px'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                      }
+                    `}
+                  >
+                    <Icon size={15} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <button onClick={() => scrollTabs('right')} className="p-2 text-muted-foreground hover:text-foreground shrink-0" title="Scroll right">
+              <ChevronRight size={18} />
+            </button>
+          </div>
 
           {/* Tab content */}
           <div className="flex-1 overflow-auto p-6" data-testid="tab-content">
