@@ -12,7 +12,9 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
 # Create error log early
 function Write-ErrorLog {
     param([string]$Message)
-    "$Message" | Out-File -FilePath "$env:USERPROFILE\Desktop\sentinel_pulse.log" -Append
+    $logMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Message"
+    $logMsg | Out-File -FilePath "$env:USERPROFILE\Desktop\sentinel_pulse.log" -Append
+    Write-Host "  LOG: $logMsg" -ForegroundColor Gray
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -20,7 +22,7 @@ Write-Host "  Sentinel Pulse - Auto Start" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-ErrorLog "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') Starting Sentinel Pulse..."
+Write-ErrorLog "Starting Sentinel Pulse..."
 
 # 1. Check/Start MongoDB ------------------
 if (-not $SkipMongo) {
