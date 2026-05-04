@@ -107,6 +107,16 @@ class InMemoryCursor:
     def __init__(self, docs):
         self._docs = docs
     
+    def sort(self, key_or_list, direction=1):
+        """Return sorted cursor (direction: 1=asc, -1=desc)."""
+        docs = list(self._docs)
+        if isinstance(key_or_list, list):
+            for key, d in key_or_list:
+                docs.sort(key=lambda x: x.get(key, 0), reverse=(d == -1))
+        else:
+            docs.sort(key=lambda x: x.get(key_or_list, 0), reverse=(direction == -1))
+        return InMemoryCursor(docs)
+    
     async def to_list(self, limit=None):
         if limit:
             return self._docs[:limit]
