@@ -69,16 +69,23 @@ Filename: "{app}\Setup-And-Launch.bat"; Description: "Launch {#MyAppName}"; Flag
 Type: filesandordirs; Name: "{app}"
 
 [Code]
-// Delete desktop log file on uninstall
+// Kill Sentinel Pulse processes on uninstall
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DesktopPath, LogFile: String;
+  ResultCode: Integer;
 begin
-  if CurUninstallStep = usPostUninstall then
+  if CurUninstallStep = usPreUninstall then
   begin
+    // Kill SentinelPulse.exe if running
+    Exec('taskkill', '/F /IM SentinelPulse.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    
+    // Kill mongod.exe if started by us (running under current user)
+    Exec('taskkill', '/F /IM mongod.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    
+    // Delete desktop log file
     DesktopPath := ExpandConstant('{userdesktop}');
     LogFile := DesktopPath + '\sentinel_pulse.log';
-    
     if FileExists(LogFile) then
       DeleteFile(LogFile);
   end;
