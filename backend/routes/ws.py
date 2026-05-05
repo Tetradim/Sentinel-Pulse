@@ -20,18 +20,8 @@ async def ws_endpoint(websocket: WebSocket):
     try:
         tickers = await deps.db.tickers.find({}, {"_id": 0}).to_list(100)
         
-        # Seed default tickers if none exist (always, not just demo mode)
-        if not tickers:
-            defaults = [
-                TickerConfig(symbol="SPY", base_power=100.0, market="US"),
-                TickerConfig(symbol="QQQ", base_power=100.0, market="US"),
-                TickerConfig(symbol="AAPL", base_power=100.0, market="US"),
-                TickerConfig(symbol="NVDA", base_power=100.0, market="US"),
-            ]
-            for t in defaults:
-                doc = t.model_dump()
-                await deps.db.tickers.insert_one(doc)
-            tickers = await deps.db.tickers.find({}, {"_id": 0}).to_list(100)
+        # No default tickers - users must add tickers manually
+        # (removed default tickers that were autopopulated)
         prices = {}
         for t in tickers:
             prices[t["symbol"]] = await deps.price_service.get_price(t["symbol"])
@@ -78,14 +68,21 @@ async def ws_endpoint(websocket: WebSocket):
                 if sym:
                     from markets import detect_market_from_symbol
                     market = msg.get("market") or detect_market_from_symbol(sym)
+                    
+                    # Check if ticker already exists
+                    existing = await deps.db.tickers.find_one({"symbol": sym}, {"_id": 0})
+                    if existing:
+                        await deps.ws_manager.broadcast({"type": "TICKER_ERROR", "error": f"Ticker {sym} already exists", "symbol": sym})
+                        continue
+                    
                     t = TickerConfig(symbol=sym, base_power=msg.get("base_power", 100.0), market=market)
                     doc = t.model_dump()
                     try:
                         await deps.db.tickers.insert_one(doc)
                         doc.pop("_id", None)
                         await deps.ws_manager.broadcast({"type": "TICKER_ADDED", "ticker": doc})
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        await deps.ws_manager.broadcast({"type": "TICKER_ERROR", "error": f"Failed to add ticker: {str(e)}", "symbol": sym})
 
             elif action == "DELETE_TICKER":
                 sym = msg.get("symbol", "").upper()

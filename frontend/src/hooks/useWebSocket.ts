@@ -1,16 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 
-const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
+// For development, use relative URL which goes through Vite proxy
+// For production/desktop mode, the backend serves the frontend directly
 
 function getWsUrl(): string {
-  if (BACKEND_URL) {
-    const url = new URL(BACKEND_URL);
-    const proto = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${url.host}/api/ws`;
-  }
-  // Desktop mode: frontend served from same host as backend
+  // In dev mode with Vite proxy, use relative WebSocket URL
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  // Connect through the same host/port - Vite proxy will handle it
   return `${proto}//${window.location.host}/api/ws`;
 }
 
@@ -75,6 +72,12 @@ export function useWebSocket() {
 
         if (data.type === 'TICKER_ADDED') {
           store.addTicker(data.ticker);
+        }
+
+        if (data.type === 'TICKER_ERROR') {
+          console.error('Ticker error:', data.error);
+          // Dispatch a custom event for the UI to handle
+          window.dispatchEvent(new CustomEvent('ticker-error', { detail: data }));
         }
 
         if (data.type === 'TICKER_UPDATED') {

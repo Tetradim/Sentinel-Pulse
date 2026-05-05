@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useStore } from '@/stores/useStore';
 import {
@@ -41,6 +41,22 @@ export function AddTickerDialog() {
   const [basePower, setBasePower] = useState(100);
   const [market, setMarket] = useState('US');
   const [error, setError] = useState('');
+
+  // Listen for ticker errors from WebSocket
+  useEffect(() => {
+    const handleTickerError = (event: CustomEvent) => {
+      const { error, symbol: errSymbol } = event.detail;
+      if (errSymbol === symbol) {
+        setError(error || 'Failed to add ticker');
+        setOpen(true); // Keep dialog open to show error
+      }
+    };
+    
+    window.addEventListener('ticker-error', handleTickerError as EventListener);
+    return () => {
+      window.removeEventListener('ticker-error', handleTickerError as EventListener);
+    };
+  }, [symbol]);
 
   const currentAllocated = Object.values(tickers).reduce((s, t) => s + (t.base_power ?? 0), 0);
   const currentAvailable = accountBalance - currentAllocated;

@@ -369,7 +369,7 @@ deps.tracer = get_tracer()
 
 # CORS configuration - secure defaults
 # Set CORS_ORIGINS env var in production to limit access
-_cors_origins = os.environ.get("CORS_ORIGINS", "")
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:8001,http://localhost:8002")
 if _cors_origins == "*":
     # WARNING: Wildcard allowed only in development
     import logging
@@ -381,7 +381,7 @@ if _cors_origins == "*":
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=_cors_origins.split(",") if _cors_origins else ["http://localhost:8001"],
+    allow_origins=_cors_origins.split(","),
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
