@@ -75,28 +75,34 @@ def check_mongo_running() -> bool:
 
 
 def start_mongodb():
-    """Skip MongoDB in packaged app - use in-memory instead."""
+    """Start MongoDB - required for Sentinel Pulse."""
     global _mongo_process
-    # Packaged apps should not try to start bundled MongoDB
-    if getattr(sys, 'frozen', False):
-        logger.info("Packaged mode - skipping MongoDB, using in-memory")
+    
+    # Check if MongoDB already running
+    if is_port_in_use(27017):
+        logger.info("MongoDB already running on port 27017")
         return
     
-    # Skip MongoDB in packaged app
-    if getattr(sys, 'frozen', False):
-        logger.info('Packaged mode - using in-memory')
+    mongo_exe = BASE_DIR / 'mongodb' / 'mongod.exe'
+    if mongo_exe.exists():
+        logger.info("Starting bundled MongoDB...")
+        _mongo_process = subprocess.Popen(
+            [str(mongo_exe), "--dbpath", str(DATA_DIR / "db")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+        )
+        # Wait for MongoDB to start
+        for _ in range(20):
+            if is_port_in_use(27017):
+                logger.info("MongoDB started")
+                return
+            time.sleep(0.5)
+        logger.error("MongoDB failed to start")
     else:
-        mongo_exe = BASE_DIR / 'mongodb' / 'mongod.exe'
-        if mongo_exe.exists():
-            start_mongodb()
-            for _ in range(10):
-                if is_port_in_use(27017):
-                    time.sleep(1)
-                    break
-                time.sleep(0.5)
-            logger.info('MongoDB OK' if is_port_in_use(27017) else 'Using in-memory')
-        else:
-            logger.info('Using in-memory mode')
+        logger.error("MongoDB not found - Sentinel Pulse requires MongoDB")
+        logger.error("Please install MongoDB or bundle it with the app")
+        sys.exit(1)
 
     logger.info("[Server] Starting on port %d...", port)
     logger.info("")
@@ -147,12 +153,15 @@ def main():
     logger.info("Sentinel Pulse v1.0.0")
     logger.info("=" * 50)
     logger.info("")
-    if getattr(sys, "frozen", False):
-        logger.info("PACKAGED: Using in-memory, skipping MongoDB")
+    
+    # MongoDB is required - check for bundled or fail
+    mongo_exe = BASE_DIR / "mongodb" / "mongod.exe"
+    if mongo_exe.exists():
+        start_mongodb()
     else:
-        mongo_exe = BASE_DIR / "mongodb" / "mongod.exe"
-        if mongo_exe.exists():
-            start_mongodb()
+        logger.error("MongoDB not found at: %s", mongo_exe)
+        logger.error("Please install MongoDB or bundle mongod.exe")
+        sys.exit(1)
     
     # Give server time to start before opening browser
     time.sleep(2)
