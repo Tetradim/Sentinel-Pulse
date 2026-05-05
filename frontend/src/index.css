@@ -15,25 +15,25 @@
 
 @layer base {
   :root {
-    /* Dark theme (default) */
-    --background: 222 47% 4%;
-    --foreground: 213 31% 91%;
-    --card: 220 40% 8%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 6%;
-    --popover-foreground: 213 31% 91%;
+    /* Dark theme (default) - adjusted for less harsh contrast */
+    --background: 222 47% 6%;
+    --foreground: 213 31% 86%;
+    --card: 220 40% 10%;
+    --card-foreground: 213 31% 86%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 213 31% 86%;
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 215 25% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 19% 30%;
+    --muted-foreground: 215 20% 60%;
     --accent: 263 70% 58%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 215 20% 16%;
-    --input: 215 20% 16%;
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
     --ring: 239 84% 67%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;

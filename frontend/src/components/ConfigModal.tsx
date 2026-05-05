@@ -28,15 +28,20 @@ const CONFIG_TABS = [
 type ConfigTabId = (typeof CONFIG_TABS)[number]['id'];
 
 interface Props {
-  ticker: TickerConfig;
+  symbol: string;
   onClose: () => void;
 }
 
-export const ConfigModal = memo(function ConfigModal({ ticker, onClose }: Props) {
+export const ConfigModal = memo(function ConfigModal({ symbol, onClose }: Props) {
   const { send } = useWebSocket();
   const incrementStep = useStore((s) => s.incrementStep);
   const decrementStep = useStore((s) => s.decrementStep);
+  // Get ticker from store to get live updates
+  const ticker = useStore((s) => s.tickers[symbol]);
   const [activeTab, setActiveTab] = useState<ConfigTabId>('rules');
+  
+  // Don't render if ticker not found
+  if (!ticker) return null;
 
   const handleFieldChange = useCallback(
     (field: string, value: any) => {

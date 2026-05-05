@@ -302,9 +302,9 @@ export function WatchlistTab() {
         </div>
       )}
 
-      {/* Config modal */}
-      {configTicker && (
-        <ConfigModal ticker={configTicker} onClose={handleConfigClose} />
+      {/* Config modal - pass symbol for live ticker updates */}
+      {configSymbol && (
+        <ConfigModal symbol={configSymbol} onClose={handleConfigClose} />
       )}
     </div>
   );

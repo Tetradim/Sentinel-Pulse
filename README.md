@@ -6,6 +6,19 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 
 ---
 
+## Recent Updates
+
+### v1.0.1 - Bug Fixes & UI Improvements
+
+- **MongoDB Detection Fix**: Windows launcher now checks for system MongoDB on port 27017 before failing when bundled mongod.exe is missing
+- **Live Configure Feedback**: Ticker config modal now shows real-time updates when settings change
+- **Card Color Picker**: Improved color picker with higher z-index and better visibility
+- **Theme Contrast**: Adjusted dark theme colors for less harsh contrast
+- **Default Tickers Removed**: No longer auto-populates SPY, QQQ, AAPL, NVDA - users must add tickers manually
+- **Ticker Error Feedback**: Shows error messages when duplicate ticker is added
+
+---
+
 ## Table of Contents
 
 1. [Architecture](#architecture)

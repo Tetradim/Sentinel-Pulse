@@ -299,13 +299,13 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
                 <Palette size={12} style={{ color: cardColor }} />
               </button>
               {showColorPicker && (
-                <div className="absolute right-0 top-full mt-1 p-2 bg-card border border-border rounded-lg shadow-lg z-50">
-                  <div className="grid grid-cols-5 gap-1">
+                <div className="absolute right-0 top-full mt-1 p-2 bg-card border border-border rounded-lg shadow-lg z-[100]">
+                  <div className="grid grid-cols-5 gap-1.5">
                     {CARD_COLORS.map((color) => (
                       <button
                         key={color}
                         onClick={() => { setTickerColor(ticker.symbol, color); setShowColorPicker(false); }}
-                        className={`w-5 h-5 rounded-full border-2 ${cardColor === color ? 'border-white' : 'border-transparent'}`}
+                        className={`w-6 h-6 rounded-full border-2 ${cardColor === color ? 'border-white ring-2 ring-white/50' : 'border-transparent'}`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
