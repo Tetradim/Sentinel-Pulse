@@ -1,7 +1,7 @@
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import { useStore, TickerConfig } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { X, TrendingDown, TrendingUp, ShieldAlert, BarChart3, Activity, Zap, Settings2, Layers, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, TrendingDown, TrendingUp, ShieldAlert, BarChart3, Activity, Zap, Settings2, Layers, RefreshCw, ChevronDown, ChevronUp, Plug } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -15,10 +15,12 @@ import {
   SteppedInput,
   OffsetInput,
   OrderTypeToggle,
+  BrokerSelector,
 } from './ticker-card/ConfigWidgets';
 
 const CONFIG_TABS = [
   { id: 'rules', label: 'Rules', icon: TrendingDown },
+  { id: 'brokers', label: 'Brokers', icon: Plug },
   { id: 'partial', label: 'Partial Fills', icon: Layers },
   { id: 'risk', label: 'Risk', icon: ShieldAlert },
   { id: 'rebracket', label: 'Rebracket', icon: Activity },
@@ -150,6 +152,17 @@ export const ConfigModal = memo(function ConfigModal({ symbol, onClose }: Props)
 
             {activeTab === 'rules' && (
               <RulesTab ticker={ticker} onChange={handleFieldChange} incStep={incrementStep} decStep={decrementStep} />
+            )}
+            {activeTab === 'brokers' && (
+              <div className="space-y-4 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Select which brokers to use for this ticker. Each broker can have a different allocation amount set in Settings.
+                </p>
+                <BrokerSelector
+                  selectedBrokerIds={ticker.broker_ids || []}
+                  onChange={(broker_ids) => send('UPDATE_TICKER', { symbol: ticker.symbol, broker_ids })}
+                />
+              </div>
             )}
             {activeTab === 'partial' && (
               <PartialFillsTab ticker={ticker} onChange={handleFieldChange} send={send} />

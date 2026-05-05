@@ -1,6 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Plug, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+
+/* ========= BrokerSelector ========= */
+interface Broker {
+  id: string;
+  name: string;
+  color: string;
+  supported: boolean;
+  risk_warning?: { level: string; message: string };
+}
+
+interface BrokerSelectorProps {
+  selectedBrokerIds: string[];
+  onChange: (brokerIds: string[]) => void;
+}
+
+export function BrokerSelector({ selectedBrokerIds, onChange }: BrokerSelectorProps) {
+  const [brokers, setBrokers] = useState<Broker[]>([]);
+
+  useEffect(() => {
+    apiFetch('/api/brokers')
+      .then((data: Broker[]) => setBrokers(data.filter(b => b.supported)))
+      .catch(() => {});
+  }, []);
+
+  const handleToggle = (brokerId: string) => {
+    const updated = selectedBrokerIds.includes(brokerId)
+      ? selectedBrokerIds.filter(id => id !== brokerId)
+      : [...selectedBrokerIds, brokerId];
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-2">
+      {brokers.map((broker) => {
+        const isSelected = selectedBrokerIds.includes(broker.id);
+        return (
+          <div
+            key={broker.id}
+            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+              isSelected
+                ? 'bg-primary/10 border-primary/50'
+                : 'bg-secondary/30 border-border hover:border-primary/30'
+            }`}
+            onClick={() => handleToggle(broker.id)}
+          >
+            <div className="w-2 h-8 rounded-full shrink-0" style={{ backgroundColor: broker.color }} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">{broker.name}</span>
+                {isSelected && <CheckCircle2 size={14} className="text-primary" />}
+              </div>
+              {broker.risk_warning && broker.risk_warning.level === 'high' && (
+                <div className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
+                  <AlertTriangle size={10} />
+                  <span>High risk of banning</span>
+                </div>
+              )}
+            </div>
+            <Checkbox checked={isSelected} className="shrink-0" />
+          </div>
+        );
+      })}
+      {brokers.length === 0 && (
+        <p className="text-xs text-muted-foreground">No supported brokers available</p>
+      )}
+    </div>
+  );
+}
 
 /* ========= useDecimalInput ========= */
 export function useDecimalInput(externalValue: number, commit: (v: number) => void) {
