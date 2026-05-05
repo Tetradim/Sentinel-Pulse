@@ -43,10 +43,13 @@ if (-not $SkipMongo) {
     if ($mongoConn) {
         Write-Host "  MongoDB is already running" -ForegroundColor Green
     } else {
-        # Try to start MongoDB - check multiple locations
+        # Try to start MongoDB - check multiple locations (including version 8.x)
         $mongodPaths = @(
             "mongod",  # PATH
+            "$env:ProgramFiles\MongoDB\Server\8.2\bin\mongod.exe",
+            "$env:ProgramFiles\MongoDB\Server\7.0\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\6.0\bin\mongod.exe",
+            "$env:ProgramFiles(x86)\MongoDB\Server\8.2\bin\mongod.exe",
             "$env:ProgramFiles(x86)\MongoDB\Server\6.0\bin\mongod.exe",
             "$ScriptDir\mongod.exe",
             "$ScriptDir\..\mongodb\mongod.exe"

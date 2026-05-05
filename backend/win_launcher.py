@@ -154,13 +154,28 @@ def main():
     logger.info("=" * 50)
     logger.info("")
     
-    # MongoDB is required - check for bundled or fail
+    # MongoDB is required - check for bundled OR system MongoDB
     mongo_exe = BASE_DIR / "mongodb" / "mongod.exe"
+    
+    # First check if system MongoDB is running on port 27017
+    system_mongo_ok = False
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('localhost', 27017))
+        sock.close()
+        system_mongo_ok = (result == 0)
+    except:
+        pass
+    
     if mongo_exe.exists():
         start_mongodb()
+    elif system_mongo_ok:
+        logger.info("Using system MongoDB on port 27017")
     else:
-        logger.error("MongoDB not found at: %s", mongo_exe)
-        logger.error("Please install MongoDB or bundle mongod.exe")
+        logger.error("MongoDB not found - neither bundled nor system MongoDB running on port 27017")
+        logger.error("Please install MongoDB or ensure mongod is running on localhost:27017")
         sys.exit(1)
     
     # Give server time to start before opening browser
