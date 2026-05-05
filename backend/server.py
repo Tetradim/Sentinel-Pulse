@@ -186,11 +186,28 @@ async def lifespan(application: FastAPI):
     mongo_error = None
     
     if getattr(sys, 'frozen', False):
-        # Packaged mode - check if MongoDB exists
+        # Packaged mode - check if MongoDB exists bundled or system MongoDB running
         from pathlib import Path
+        import socket
+        
         mongo_exists = Path(sys._MEIPASS).joinpath("mongodb", "mongod.exe").exists()
-        if not mongo_exists:
-            raise RuntimeError("MongoDB is required but not bundled with this installation")
+        
+        # Check if system MongoDB is running on port 27017
+        system_mongo_ok = False
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+            result = sock.connect_ex(('localhost', 27017))
+            sock.close()
+            system_mongo_ok = (result == 0)
+        except:
+            pass
+        
+        if not mongo_exists and not system_mongo_ok:
+            raise RuntimeError("MongoDB is required but not found. Please install MongoDB or bundle mongod.exe")
+        
+        if system_mongo_ok:
+            logger.info("Using system MongoDB on port 27017")
     
     try:
         await deps.db.command("ping")
