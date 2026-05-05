@@ -13,7 +13,6 @@ This is the slim orchestrator that wires together all modules:
 import asyncio
 import os
 import sys
-import webbrowser
 import threading
 import logging
 from contextlib import asynccontextmanager
@@ -462,17 +461,10 @@ if _static_dir.is_dir():
 if __name__ == "__main__":
     import uvicorn
     
-    # Open browser after a short delay
-    def open_browser():
-        import time
-        time.sleep(2)
-        webbrowser.open(f"http://localhost:{port}")
-    
     # Check if running as frozen executable (PyInstaller)
     port = int(os.getenv("PORT", "8002"))
     
     if getattr(sys, 'frozen', False):
-        threading.Thread(target=open_browser, daemon=True).start()
         print("\n" + "="*50)
         print("  Sentinel Pulse - Trading Bot")
         print("="*50)
