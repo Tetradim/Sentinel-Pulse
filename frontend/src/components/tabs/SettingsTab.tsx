@@ -37,8 +37,9 @@ export function SettingsTab() {
   const [incText, setIncText] = useState('0.5');
   const [decText, setDecText] = useState('0.5');
   const [balanceText, setBalanceText] = useState('0');
-  const [balanceValue, setBalanceValue] = useState(0);
+  const [balanceValue, setBalanceValue] = useState<number | null>(null); // null means not yet loaded
   const [allocated, setAllocated] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     apiFetch('/api/settings')
@@ -50,24 +51,38 @@ export function SettingsTab() {
         setDecStep(data.decrement_step ?? 0.5);
         setIncText(String(data.increment_step ?? 0.5));
         setDecText(String(data.decrement_step ?? 0.5));
-        setBalanceValue(data.account_balance ?? 0);
-        setBalanceText(String(data.account_balance ?? 0));
+        
+        // Only set balance if API returns an explicit value (not undefined/null)
+        if (data.account_balance !== undefined && data.account_balance !== null) {
+          setBalanceValue(data.account_balance);
+          setBalanceText(String(data.account_balance));
+        }
+        
         setAllocated(data.allocated ?? 0);
         useStore.getState().setSimulate247(data.simulate_24_7 || false);
         useStore.getState().setLiveDuringMarketHours(data.live_during_market_hours || false);
         useStore.getState().setPaperAfterHours(data.paper_after_hours || false);
         useStore.getState().setIncrementStep(data.increment_step ?? 0.5);
         useStore.getState().setDecrementStep(data.decrement_step ?? 0.5);
-        if (data.account_balance !== undefined) {
+        
+        // Only update store if we have a valid balance value
+        if (data.account_balance !== undefined && data.account_balance !== null) {
           useStore.getState().setAccountBalance(data.account_balance, data.allocated ?? 0, data.available ?? 0);
         }
+        
+        setLoaded(true); // Mark as loaded
       })
-      .catch(() => {});
+      .catch(() => {
+        setLoaded(true); // Mark as loaded even on error to prevent reset
+      });
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Ensure we send a valid number for account_balance (convert null to 0)
+      const balanceToSave = balanceValue ?? parseFloat(balanceText) ?? 0;
+      
       const res = await apiFetch('/api/settings', {
         method: 'POST',
         body: JSON.stringify({
@@ -75,12 +90,16 @@ export function SettingsTab() {
           simulate_24_7: useStore.getState().simulate247,
           increment_step: incStep,
           decrement_step: decStep,
-          account_balance: balanceValue,
+          account_balance: balanceToSave,
         }),
       });
+      // Update local state with saved value
+      setBalanceValue(balanceToSave);
+      setBalanceText(String(balanceToSave));
       // Update store with new step values
       useStore.getState().setIncrementStep(incStep);
       useStore.getState().setDecrementStep(decStep);
+      useStore.getState().setAccountBalance(balanceToSave, allocated, balanceToSave - allocated);
       setTgConnected(res.telegram_running || false);
       if (res.telegram_running) {
         toast.success('Settings saved. Telegram bot connected!');
@@ -165,7 +184,9 @@ export function SettingsTab() {
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="rounded-lg bg-secondary/50 border border-border p-3">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Account</p>
-            <p className="font-mono text-lg font-bold text-foreground">${balanceValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="font-mono text-lg font-bold text-foreground">
+              ${balanceValue !== null ? balanceValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+            </p>
           </div>
           <div className="rounded-lg bg-secondary/50 border border-border p-3">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Allocated</p>
@@ -173,8 +194,8 @@ export function SettingsTab() {
           </div>
           <div className="rounded-lg bg-secondary/50 border border-border p-3">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Available</p>
-            <p className={`font-mono text-lg font-bold ${(balanceValue - allocated) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              ${(balanceValue - allocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className={`font-mono text-lg font-bold ${((balanceValue ?? 0) - allocated) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              ${((balanceValue ?? 0) - allocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </div>

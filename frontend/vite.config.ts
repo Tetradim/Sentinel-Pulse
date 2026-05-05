@@ -25,4 +25,11 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true,
   },
+  // Proxy API requests to backend
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8002',
+      changeOrigin: true,
+    },
+  },
 })
