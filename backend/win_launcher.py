@@ -28,8 +28,21 @@ else:
 
 sys.path.insert(0, str(BASE_DIR))
 
-# Set up logger
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+# Set up logger with UTF-8 encoding for console
+def _get_stream_handler():
+    import sys
+    handler = logging.StreamHandler(sys.stdout)
+    handler.stream.reconfigure(errors='replace')
+    return handler
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s %(message)s",
+    handlers=[
+        logging.FileHandler(str(get_log_path())),
+        _get_stream_handler()
+    ]
+)
 logger = logging.getLogger("SentinelPulse")
 
 # Simple file logger for debugging packaged app (on desktop for easy access)

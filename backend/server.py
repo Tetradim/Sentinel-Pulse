@@ -24,12 +24,20 @@ def get_log_path():
         return Path(sys._MEIPASS) / 'sentinel_pulse.log'
     return Path(__file__).parent / 'sentinel_pulse.log'
 
+# Configure logging with UTF-8 encoding for console output
+def _get_stream_handler():
+    handler = logging.StreamHandler(sys.stdout)
+    # Explicitly set UTF-8 encoding to prevent console charset issues
+    handler.stream.reconfigure(errors='replace')  
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+    return handler
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s',
     handlers=[
-        logging.FileHandler(str(get_log_path())),
-        logging.StreamHandler()
+        logging.FileHandler(str(get_log_path()),  # Default UTF-8 for file
+        _get_stream_handler()  # Use custom handler for console
     ]
 )
 logger = logging.getLogger("SentinelPulse")
