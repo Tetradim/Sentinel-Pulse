@@ -6,6 +6,24 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 
 ---
 
+## Recent Updates
+
+### v1.0.2 - Multi-Broker UI Improvements
+
+- **Brokers Tab in ConfigModal**: Added a Brokers tab to the ticker configuration modal. Click any ticker → Config → Brokers to assign brokers directly without navigating to Settings.
+- **Broker Allocations**: Once brokers are assigned to a ticker, go to Settings → Broker Allocations to set custom buy power amounts per broker.
+- **Risk Warnings**: High-risk brokers (Robinhood, Webull) show warning badges on the Brokers tab and in the Brokers page.
+- **Live Feedback**: ConfigModal checkboxes and switches now update in real-time without reopening.
+
+### v1.0.1 - Bug Fixes & UI Improvements
+
+- **MongoDB Detection Fix**: Windows launcher now checks for system MongoDB on port 27017 before failing when bundled mongod.exe is missing.
+- **Card Color Picker**: Improved color picker with higher z-index and better visibility.
+- **Theme Contrast**: Adjusted dark theme colors for less harsh contrast.
+- **Default Tickers**: No longer auto-populates default tickers - users must add tickers manually.
+
+---
+
 ## Table of Contents
 
 1. [Architecture](#architecture)
