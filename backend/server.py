@@ -26,7 +26,7 @@ def get_log_path():
 
 # Configure logging with UTF-8 encoding for console output
 def _get_stream_handler():
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(sys.stderr)
     # Explicitly set UTF-8 encoding to prevent console charset issues
     handler.stream.reconfigure(errors='replace')  
     handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))

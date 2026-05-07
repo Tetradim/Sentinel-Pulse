@@ -31,8 +31,9 @@ sys.path.insert(0, str(BASE_DIR))
 # Set up logger with UTF-8 encoding for console
 def _get_stream_handler():
     import sys
-    handler = logging.StreamHandler(sys.stdout)
-    handler.stream.reconfigure(errors='replace')
+    # Use stderr instead - stdout may not be initialized yet at import time
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
     return handler
 
 def get_log_path():
