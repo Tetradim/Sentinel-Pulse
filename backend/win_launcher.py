@@ -21,6 +21,14 @@ import logging
 import winreg
 from pathlib import Path
 
+# Set Windows console to UTF-8 mode BEFORE any other imports
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 if getattr(sys, 'frozen', False):
     BASE_DIR = Path(sys._MEIPASS)
 else:

@@ -18,6 +18,14 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# Set Windows console to UTF-8 mode BEFORE any other imports
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # Simple file logger for debugging
 def get_log_path():
     if getattr(sys, 'frozen', False):
