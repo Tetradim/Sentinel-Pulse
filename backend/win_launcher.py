@@ -92,7 +92,18 @@ def check_mongo_running() -> bool:
 
 
 def start_mongodb():
-    """Start MongoDB - required for Sentinel Pulse."""
+    """Start MongoDB from bundled location."""
+    mongo_exe = BASE_DIR / 'mongodb' / 'mongod.exe'
+    if mongo_exe.exists():
+        start_mongodb_path(mongo_exe)
+    else:
+        logger.error("MongoDB not found - Sentinel Pulse requires MongoDB")
+        logger.error("Please install MongoDB or bundle it with the app")
+        sys.exit(1)
+
+
+def start_mongodb_path(mongo_exe: Path):
+    """Start MongoDB from a specific path."""
     global _mongo_process
     
     # Check if MongoDB already running
@@ -100,30 +111,20 @@ def start_mongodb():
         logger.info("MongoDB already running on port 27017")
         return
     
-    mongo_exe = BASE_DIR / 'mongodb' / 'mongod.exe'
-    if mongo_exe.exists():
-        logger.info("Starting bundled MongoDB...")
-        _mongo_process = subprocess.Popen(
-            [str(mongo_exe), "--dbpath", str(DATA_DIR / "db")],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-        )
-        # Wait for MongoDB to start
-        for _ in range(20):
-            if is_port_in_use(27017):
-                logger.info("MongoDB started")
-                return
-            time.sleep(0.5)
-        logger.error("MongoDB failed to start")
-    else:
-        logger.error("MongoDB not found - Sentinel Pulse requires MongoDB")
-        logger.error("Please install MongoDB or bundle it with the app")
-        sys.exit(1)
-
-    logger.info("[Server] Starting on port %d...", port)
-    logger.info("")
-    
+    logger.info("Starting MongoDB from: %s", mongo_exe)
+    _mongo_process = subprocess.Popen(
+        [str(mongo_exe), "--dbpath", str(DATA_DIR / "db")],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+    )
+    # Wait for MongoDB to start
+    for _ in range(20):
+        if is_port_in_use(27017):
+            logger.info("MongoDB started")
+            return
+        time.sleep(0.5)
+    logger.error("MongoDB failed to start")
 
 
 def open_browser():
@@ -171,13 +172,39 @@ def main():
     logger.info("=" * 50)
     logger.info("")
     
-    # MongoDB is required - check for bundled or fail
+    # MongoDB is required - check for bundled, system MongoDB, or running instance
     mongo_exe = BASE_DIR / "mongodb" / "mongod.exe"
+    
+    # Check system MongoDB locations
+    system_mongo_paths = [
+        Path(r"C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe"),
+        Path(r"C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe"),
+        Path(r"C:\Program Files\MongoDB\Server\7.0\bin\mongod.exe"),
+        Path(r"C:\Program Files (x86)\MongoDB\Server\8.2\bin\mongod.exe"),
+    ]
+    
+    mongo_running = check_mongo_running()
+    
     if mongo_exe.exists():
+        logger.info("Using bundled MongoDB...")
         start_mongodb()
+    elif any(p.exists() for p in system_mongo_paths):
+        logger.info("Using system MongoDB...")
+        # System MongoDB is installed and running - just verify connection
+        if not mongo_running:
+            # Try to start system MongoDB
+            for mongo_path in system_mongo_paths:
+                if mongo_path.exists():
+                    logger.info("Starting system MongoDB from: %s", mongo_path)
+                    start_mongodb_path(mongo_path)
+                    break
+        else:
+            logger.info("System MongoDB already running")
+    elif mongo_running:
+        logger.info("MongoDB already running (detected via tasklist)")
     else:
-        logger.error("MongoDB not found at: %s", mongo_exe)
-        logger.error("Please install MongoDB or bundle mongod.exe")
+        logger.error("MongoDB not found - please install MongoDB or bundle mongod.exe")
+        logger.error("Download from: https://www.mongodb.com/try/download/community")
         sys.exit(1)
     
     # Give server time to start before opening browser
