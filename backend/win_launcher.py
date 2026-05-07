@@ -56,7 +56,7 @@ logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s %(message)s",
     handlers=[
-        logging.FileHandler(str(get_log_path())),
+        logging.FileHandler(str(get_log_path()), encoding="utf-8"),
         _get_stream_handler()
     ]
 )
@@ -66,7 +66,7 @@ logger = logging.getLogger("SentinelPulse")
 try:
     desktop = Path.home() / "Desktop"
     log_file = desktop / "sentinel_pulse.log"
-    fh = logging.FileHandler(str(log_file))
+    fh = logging.FileHandler(str(log_file), encoding="utf-8")
     fh.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
     logger.addHandler(fh)
     logger.info("=== Launcher PID: %d, Log: %s ===", os.getpid(), log_file)
