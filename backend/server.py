@@ -18,19 +18,6 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-# Set Windows console to UTF-8 mode BEFORE any other imports
-if sys.platform == 'win32':
-    try:
-        # Try to set console code page to UTF-8 (65001)
-        os.system('chcp 65001 > NUL 2>&1')
-    except Exception:
-        pass
-    try:
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    except Exception:
-        pass
-
 # Simple file logger for debugging
 def get_log_path():
     if getattr(sys, 'frozen', False):
@@ -39,20 +26,20 @@ def get_log_path():
 
 # Configure logging with UTF-8 encoding for console output
 def _get_stream_handler():
-    handler = logging.StreamHandler(sys.stderr)
+    handler = logging.StreamHandler(sys.stdout)
     # Explicitly set UTF-8 encoding to prevent console charset issues
     handler.stream.reconfigure(errors='replace')  
     handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     return handler
 
+_log_handlers = [
+    logging.FileHandler(str(get_log_path())),
+    _get_stream_handler(),
+]
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s',
-    handlers=[
-        logging.FileHandler(str(get_log_path()),  # Default UTF-8 for file
-        _get_stream_handler()  # Use custom handler for console
-    ]
-)
+    handlers=_log_handlers)
 logger = logging.getLogger("SentinelPulse")
 
 # Log startup
