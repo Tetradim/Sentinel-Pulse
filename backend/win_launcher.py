@@ -35,6 +35,9 @@ def _get_stream_handler():
     handler.stream.reconfigure(errors='replace')
     return handler
 
+def get_log_path():
+    return BASE_DIR / "sentinel_pulse.log"
+
 logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s %(message)s",
