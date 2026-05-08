@@ -8,7 +8,6 @@ Features:
 - Auto-start option on system boot
 - Native Windows notifications
 """
-import asyncio
 import os
 import sys
 import webbrowser
@@ -38,6 +37,9 @@ if getattr(sys, 'frozen', False):
     BASE_DIR = Path(sys._MEIPASS)
 else:
     BASE_DIR = Path(__file__).parent
+
+# DATA_DIR for MongoDB database storage
+DATA_DIR = BASE_DIR / "data"
 
 sys.path.insert(0, str(BASE_DIR))
 
@@ -140,6 +142,18 @@ def start_mongodb_path(mongo_exe: Path):
     logger.error("MongoDB failed to start")
 
 
+def wait_for_server(port: int, timeout: int = 30) -> bool:
+    """Wait for the server to be ready to accept connections."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if is_port_in_use(port):
+            # Give server a moment to fully initialize
+            time.sleep(0.5)
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def open_browser():
     """Open the dashboard in the default browser."""
     import webbrowser
@@ -220,37 +234,33 @@ def main():
         logger.error("Download from: https://www.mongodb.com/try/download/community")
         sys.exit(1)
     
-    # Give server time to start before opening browser
-    time.sleep(2)
+    import uvicorn
+    from server import app
+    
+    def run_server():
+        try:
+            uvicorn.run(
+                app, 
+                host="0.0.0.0", 
+                port=port, 
+                log_config=None
+            )
+        finally:
+            stop_mongodb()
+            logger.info("[Sentinel Pulse] Server stopped")
+    
+    server_thread = threading.Thread(target=run_server)
+    server_thread.start()
+    
+    # Wait for server to be ready before opening browser
+    if not wait_for_server(port):
+        logger.warning("Server may not be ready, opening browser anyway...")
     
     browser_thread = threading.Thread(target=open_browser, daemon=True)
     browser_thread.start()
     
-    # Set up system tray (optional - don't fail if it doesn't work)
-    try:
-        _setup_system_tray()
-    except Exception as e:
-        logger.warning(f"System tray setup skipped: {e}")
-    
-    # Set up global hotkeys (optional)
-    try:
-        _setup_global_hotkeys()
-    except Exception as e:
-        logger.warning(f"Global hotkeys setup skipped: {e}")
-    
-    import uvicorn
-    from server import app
-    
-    try:
-        uvicorn.run(
-            app, 
-            host="0.0.0.0", 
-            port=port, 
-            log_config=None
-        )
-    finally:
-        stop_mongodb()
-        logger.info("[Sentinel Pulse] Server stopped")
+    # Wait for server thread to complete (blocks until server stops)
+    server_thread.join()
 
 
 if __name__ == "__main__":

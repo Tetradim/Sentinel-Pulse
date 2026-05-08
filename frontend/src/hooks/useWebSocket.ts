@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
 
-const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
+// Vite uses VITE_ prefix for env vars (CRA used REACT_APP_)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 function getWsUrl(): string {
   if (BACKEND_URL) {
