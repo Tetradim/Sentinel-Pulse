@@ -46,8 +46,11 @@ if (-not $SkipMongo) {
         # Try to start MongoDB - check multiple locations
         $mongodPaths = @(
             "mongod",  # PATH
+            "$env:ProgramFiles\MongoDB\Server\8.2\bin\mongod.exe",
+            "$env:ProgramFiles\MongoDB\Server\8.0\bin\mongod.exe",
+            "$env:ProgramFiles\MongoDB\Server\7.0\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\6.0\bin\mongod.exe",
-            "$env:ProgramFiles(x86)\MongoDB\Server\6.0\bin\mongod.exe",
+            "$env:ProgramFiles(x86)\MongoDB\Server\8.2\bin\mongod.exe",
             "$ScriptDir\mongod.exe",
             "$ScriptDir\..\mongodb\mongod.exe"
         )
@@ -67,7 +70,7 @@ if (-not $SkipMongo) {
         
         if ($mongod) {
             Write-Host "  Starting MongoDB from: $mongod"
-            $dbPath = "$ScriptDir\..\data\db"
+            $dbPath = "$ScriptDir\data\db"
             if (-not (Test-Path $dbPath)) { New-Item -ItemType Directory -Path $dbPath -Force | Out-Null }
             Start-Process -FilePath $mongod -ArgumentList "--dbpath $dbPath" -WindowStyle Hidden
             Start-Sleep -Seconds 3
@@ -84,6 +87,7 @@ if (-not $SkipMongo) {
 Write-Host "[2/3] Starting Sentinel Pulse..." -ForegroundColor Yellow
 
 $env:CREDENTIAL_KEY = "sentinel-$(Get-Random -Maximum 9999)"
+$env:PORT = "8002"
 
 # Start the app
 $proc = Start-Process -FilePath ".\SentinelPulse.exe" -PassThru -WorkingDirectory $PWD
@@ -108,14 +112,14 @@ if ($edge) {
     Write-Host "  Edge not running" -ForegroundColor Yellow
     if (-not $NoBrowser) {
         Write-Host "  Opening default browser..."
-        Start-Process "http://localhost:3000"
+        Start-Process "http://localhost:8002"
     }
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Sentinel Pulse is ready!" -ForegroundColor Green
-Write-Host "  Open http://localhost:3000" -ForegroundColor Cyan
+Write-Host "  Open http://localhost:8002" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Press Ctrl+C to stop, or any key to exit..."
