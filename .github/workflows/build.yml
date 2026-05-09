@@ -59,7 +59,7 @@ jobs:
           pip install pyinstaller pillow
 
       # ---------------------------------------------------------------------
-      # 5. Build frontend (React static files) — clear cache first
+      # 5. Build frontend (React static files) — always rebuild in CI
       # ---------------------------------------------------------------------
       - name: Build frontend
         run: |
@@ -74,7 +74,7 @@ jobs:
           npm run build
 
       # ---------------------------------------------------------------------
-      # 5b. Verify frontend build exists
+      # 5b. Verify frontend build
       # ---------------------------------------------------------------------
       - name: Verify frontend build
         run: |
@@ -101,7 +101,7 @@ jobs:
           @"
           MONGO_URL=mongodb://localhost:27017
           DB_NAME=sentinelpulse
-          CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+          CORS_ORIGINS=http://localhost:8002,http://127.0.0.1:8002
           DEMO_MODE=true
           PORT=8002
           LOG_LEVEL=DEBUG
