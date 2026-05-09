@@ -74,7 +74,7 @@ logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s %(message)s",
     handlers=[
-        logging.FileHandler(str(get_log_path()), encoding="utf-8"),
+        logging.FileHandler(str(get_log_path()), encoding="utf-8-sig"),
         _get_stream_handler()
     ]
 )
@@ -84,7 +84,9 @@ logger = logging.getLogger("SentinelPulse")
 try:
     desktop = Path.home() / "Desktop"
     log_file = desktop / "sentinel_pulse.log"
-    fh = logging.FileHandler(str(log_file), encoding="utf-8")
+    
+    # Use utf-8-sig to add BOM for Windows Notepad compatibility
+    fh = logging.FileHandler(str(log_file), encoding="utf-8-sig")
     fh.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
     logger.addHandler(fh)
     logger.info("=== Launcher PID: %d, Log: %s ===", os.getpid(), log_file)

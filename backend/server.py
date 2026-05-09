@@ -39,7 +39,7 @@ def _get_stream_handler():
     return handler
 
 _log_handlers = [
-    logging.FileHandler(str(get_log_path()), encoding="utf-8"),
+    logging.FileHandler(str(get_log_path()), encoding="utf-8-sig"),
     _get_stream_handler(),
 ]
 logging.basicConfig(
