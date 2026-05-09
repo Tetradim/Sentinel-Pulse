@@ -104,33 +104,7 @@ Write-Host "  .env created with MONGO_URL=$MongoUri" -ForegroundColor Green
 if (-not $SkipBackend) {
     Write-Host "[5/6] Building executable with PyInstaller..." -ForegroundColor Yellow
     Push-Location $BACKEND
-    pyinstaller `
-        --name "Sentinel Pulse" `
-        --onedir `
-        --noconsole `
-        --add-data "static;static" `
-        --add-data ".env;." `
-        --hidden-import "uvicorn.logging" `
-        --hidden-import "uvicorn.loops" `
-        --hidden-import "uvicorn.loops.auto" `
-        --hidden-import "uvicorn.protocols" `
-        --hidden-import "uvicorn.protocols.http" `
-        --hidden-import "uvicorn.protocols.http.auto" `
-        --hidden-import "uvicorn.protocols.websockets" `
-        --hidden-import "uvicorn.protocols.websockets.auto" `
-        --hidden-import "uvicorn.lifespan" `
-        --hidden-import "uvicorn.lifespan.on" `
-        --hidden-import "motor" `
-        --hidden-import "motor.motor_asyncio" `
-        --hidden-import "pymongo" `
-        --hidden-import "dns.resolver" `
-        --hidden-import "yfinance" `
-        --hidden-import "telegram" `
-        --hidden-import "telegram.ext" `
-        --collect-all "yfinance" `
-        --collect-all "certifi" `
-        --noconfirm `
-        server.py
+    pyinstaller sentinel_win.spec
     Pop-Location
     Write-Host "  Executable built." -ForegroundColor Green
 } else {
