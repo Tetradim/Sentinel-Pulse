@@ -125,6 +125,8 @@ def check_mongo_running() -> bool:
 def check_for_update():
     """Check for updates from GitHub Releases and self-update if newer version available."""
     import urllib.request
+    import zipfile
+    import io
     from packaging import version
     
     try:
@@ -147,34 +149,57 @@ def check_for_update():
         if latest_ver > current_ver:
             logger.info(f"Update available: {CURRENT_VERSION} → {latest_version}")
             
-            # Find the installer asset
-            exe_url = None
+            # Find the source zip asset
+            zip_url = None
+            source_link = None
             for asset in release_data.get('assets', []):
-                asset_name = asset.get('name', '')
-                if 'SentinelPulse-Setup-' in asset_name and asset_name.endswith('.exe'):
-                    exe_url = asset.get('browser_download_url')
+                asset_name = asset.get('name', '').lower()
+                # Look for source zip or the portable folder
+                if 'source' in asset_name and asset_name.endswith('.zip'):
+                    zip_url = asset.get('browser_download_url')
                     break
             
-            if not exe_url:
-                return False, None
+            # Fallback: download the exe directly
+            if not zip_url:
+                for asset in release_data.get('assets', []):
+                    asset_name = asset.get('name', '')
+                    if 'SentinelPulse-Setup-' in asset_name and asset_name.endswith('.exe'):
+                        exe_url = asset.get('browser_download_url')
+                        # Download exe to temp location
+                        temp_exe = BASE_DIR / f"SentinelPulse_{latest_version}.exe.new"
+                        logger.info(f"Downloading update...")
+                        urllib.request.urlretrieve(exe_url, str(temp_exe))
+                        
+                        # Rename current to .old, new to current
+                        current_exe = sys.executable
+                        old_exe = sys.executable + '.old'
+                        
+                        # Replace on next startup - create marker
+                        marker = BASE_DIR / 'update_pending.txt'
+                        with open(marker, 'w') as f:
+                            f.write(f"{latest_version}\n{current_exe}\n{old_exe}\n{temp_exe}")
+                        
+                        logger.info(f"Update downloaded. Will apply on restart.")
+                        return True, latest_version
             
-            # Download to temp file
-            temp_exe = Path(sys.temp_dir) / f"SentinelPulse-{latest_version}-Setup.exe"
-            
-            # Download with progress
-            def download_progress(block_num, block_size, total_size):
-                # Simple - just log every 100 blocks
-                if block_num % 100 == 0:
-                    pct = (block_num * block_size / total_size * 100) if total_size > 0 else 0
-                    logger.info(f"Downloading update: {pct:.1f}%")
-            
-            urllib.request.urlretrieve(exe_url, str(temp_exe), reporthook=download_progress)
-            logger.info(f"Update downloaded to: {temp_exe}")
-            
-            # Launch installer and exit
-            subprocess.Popen([str(temp_exe), '/SILENT', '/CLOSEAPPLICATIONS'])
-            
-            return True, latest_version
+            # Source zip approach - extract and replace files
+            if zip_url:
+                logger.info(f"Downloading source package...")
+                zip_path = BASE_DIR / f"update_{latest_version}.zip"
+                urllib.request.urlretrieve(zip_url, str(zip_path))
+                
+                # Extract to temp location
+                extract_dir = BASE_DIR / f"update_{latest_version}"
+                with zipfile.ZipFile(str(zip_path), 'r') as zf:
+                    zf.extractall(str(extract_dir))
+                
+                # Create marker for post-restart apply
+                marker = BASE_DIR / 'update_pending.txt'
+                with open(marker, 'w') as f:
+                    f.write(f"{latest_version}\n{extract_dir}\n")
+                
+                logger.info(f"Update extracted to {extract_dir}. Will apply on restart.")
+                return True, latest_ver
             
     except ImportError:
         # packaging not installed, skip version check
@@ -183,6 +208,56 @@ def check_for_update():
         logger.info(f"Update check failed: {e}")
     
     return False, None
+
+
+def apply_pending_update():
+    """Apply any pending update from previous session."""
+    marker = BASE_DIR / 'update_pending.txt'
+    if not marker.exists():
+        return
+    
+    try:
+        with open(marker, 'r') as f:
+            lines = [l.strip() for l in f.readlines()]
+        
+        new_version = lines[0]
+        logger.info(f"Applying update to v{new_version}...")
+        
+        if len(lines) >= 4:
+            # Direct exe replacement
+            temp_exe = Path(lines[3])
+            current_exe = Path(lines[1])
+            old_exe = Path(lines[2])
+            
+            if temp_exe.exists():
+                # Swap: current → old, temp → current
+                if old_exe.exists():
+                    old_exe.unlink()
+                current_exe.rename(old_exe)
+                temp_exe.rename(current_exe)
+                logger.info(f"Update applied: {current_exe.name}")
+        
+        elif len(lines) >= 2:
+            # Source zip extraction
+            extract_dir = Path(lines[1])
+            if extract_dir.exists():
+                # Move all files from extract_dir to BASE_DIR
+                for src in extract_dir.rglob('*'):
+                    if src.is_file():
+                        dest = BASE_DIR / src.relative_to(extract_dir)
+                        if dest.exists():
+                            dest.unlink()
+                        shutil.move(str(src), str(dest))
+                # Cleanup
+                shutil.rmtree(extract_dir)
+                logger.info(f"Update applied from {extract_dir}")
+        
+        # Clear marker
+        marker.unlink()
+        logger.info(f"Update to v{new_version} complete!")
+        
+    except Exception as e:
+        logger.info(f"Update apply failed: {e}")
 
 
 def start_mongodb():
@@ -278,15 +353,15 @@ def main():
     logger.info("=" * 50)
     logger.info("")
     
+    # First, apply any pending update from previous session
+    apply_pending_update()
+    
     # Check for updates (non-blocking)
     try:
         update_needed, new_version = check_for_update()
         if update_needed:
-            logger.info(f"Update to v{new_version} downloaded. Running installer...")
-            logger.info("The application will restart with the new version.")
-            # Give logger time to flush
-            time.sleep(2)
-            sys.exit(0)
+            logger.info(f"Update to v{new_version} downloaded. Restart to apply.")
+            # Don't exit - continue running and apply on next restart
     except Exception as e:
         logger.info(f"Update check skipped: {e}")
     
