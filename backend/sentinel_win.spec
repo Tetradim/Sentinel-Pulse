@@ -53,7 +53,7 @@ a = Analysis(
         ("ws_manager.py",      "."),
         ("telemetry.py",       "."),
         # Env — use .env if exists (created by workflow for demo mode)
-        (".env",  ".env"),
+        (".env", "."),
         *pymongo_d,
         *bson_d,
         *motor_d,
@@ -104,7 +104,6 @@ a = Analysis(
         "watchdog",
         "watchdog.observers",
         "watchdog.events",
-        "watchdog.observers.fsevents",   # macOS-native backend
         # opentelemetry
         "opentelemetry",
         "opentelemetry.sdk.trace",
