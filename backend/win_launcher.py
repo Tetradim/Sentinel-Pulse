@@ -7,6 +7,7 @@ Features:
 - Global hotkeys for quick actions
 - Auto-start option on system boot
 - Native Windows notifications
+- Self-update from GitHub Releases
 """
 import os
 import sys
@@ -18,7 +19,14 @@ import signal
 import socket
 import logging
 import winreg
+import shutil
+import json
 from pathlib import Path
+
+# Current version - match setup.iss MyAppVersion
+CURRENT_VERSION = "1.0.0"
+UPDATE_REPO = "Tetradim/Set-Trader"
+UPDATE_URL = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 
 # Set Windows console to UTF-8 mode BEFORE any other imports
 if sys.platform == 'win32':
@@ -114,6 +122,69 @@ def check_mongo_running() -> bool:
         return False
 
 
+def check_for_update():
+    """Check for updates from GitHub Releases and self-update if newer version available."""
+    import urllib.request
+    from packaging import version
+    
+    try:
+        # Skip update check if not a frozen exe
+        if not getattr(sys, 'frozen', False):
+            return False, None
+            
+        # Request latest release info
+        req = urllib.request.Request(UPDATE_URL)
+        req.add_header('User-Agent', f'SentinelPulse/{CURRENT_VERSION}')
+        req.add_header('Accept', 'application/vnd.github.v3+json')
+        
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            release_data = json.loads(resp.read().decode('utf-8'))
+        
+        latest_version = release_data.get('tag_name', '').lstrip('v')
+        current_ver = version.parse(CURRENT_VERSION)
+        latest_ver = version.parse(latest_version)
+        
+        if latest_ver > current_ver:
+            logger.info(f"Update available: {CURRENT_VERSION} → {latest_version}")
+            
+            # Find the installer asset
+            exe_url = None
+            for asset in release_data.get('assets', []):
+                asset_name = asset.get('name', '')
+                if 'SentinelPulse-Setup-' in asset_name and asset_name.endswith('.exe'):
+                    exe_url = asset.get('browser_download_url')
+                    break
+            
+            if not exe_url:
+                return False, None
+            
+            # Download to temp file
+            temp_exe = Path(sys.temp_dir) / f"SentinelPulse-{latest_version}-Setup.exe"
+            
+            # Download with progress
+            def download_progress(block_num, block_size, total_size):
+                # Simple - just log every 100 blocks
+                if block_num % 100 == 0:
+                    pct = (block_num * block_size / total_size * 100) if total_size > 0 else 0
+                    logger.info(f"Downloading update: {pct:.1f}%")
+            
+            urllib.request.urlretrieve(exe_url, str(temp_exe), reporthook=download_progress)
+            logger.info(f"Update downloaded to: {temp_exe}")
+            
+            # Launch installer and exit
+            subprocess.Popen([str(temp_exe), '/SILENT', '/CLOSEAPPLICATIONS'])
+            
+            return True, latest_version
+            
+    except ImportError:
+        # packaging not installed, skip version check
+        pass
+    except Exception as e:
+        logger.info(f"Update check failed: {e}")
+    
+    return False, None
+
+
 def start_mongodb():
     """Start MongoDB from bundled location."""
     mongo_exe = BASE_DIR / 'mongodb' / 'mongod.exe'
@@ -203,9 +274,21 @@ def main():
     signal.signal(signal.SIGINT, graceful_shutdown)
     signal.signal(signal.SIGTERM, graceful_shutdown)
     logger.info("=" * 50)
-    logger.info("Sentinel Pulse v1.0.0")
+    logger.info(f"Sentinel Pulse v{CURRENT_VERSION}")
     logger.info("=" * 50)
     logger.info("")
+    
+    # Check for updates (non-blocking)
+    try:
+        update_needed, new_version = check_for_update()
+        if update_needed:
+            logger.info(f"Update to v{new_version} downloaded. Running installer...")
+            logger.info("The application will restart with the new version.")
+            # Give logger time to flush
+            time.sleep(2)
+            sys.exit(0)
+    except Exception as e:
+        logger.info(f"Update check skipped: {e}")
     
     # MongoDB is required - check for bundled, system MongoDB, or running instance
     mongo_exe = BASE_DIR / "mongodb" / "mongod.exe"

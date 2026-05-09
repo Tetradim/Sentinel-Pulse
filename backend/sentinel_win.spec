@@ -111,6 +111,8 @@ a = Analysis(
         # misc
         "dotenv",
         "python_dotenv",
+        "packaging",
+        "packaging.version",
         "multipart",
         "email_validator",
         "zoneinfo",
