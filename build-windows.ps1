@@ -95,7 +95,7 @@ Write-Host "[4/6] Creating production .env..." -ForegroundColor Yellow
 $envContent = @"
 MONGO_URL=$MongoUri
 DB_NAME=sentinel_pulse
-CORS_ORIGINS=http://localhost:8001,http://127.0.0.1:8001
+CORS_ORIGINS=http://localhost:8002,http://127.0.0.1:8002
 "@
 $envContent | Out-File -Encoding UTF8 (Join-Path $BACKEND ".env")
 Write-Host "  .env created with MONGO_URL=$MongoUri" -ForegroundColor Green
@@ -148,7 +148,7 @@ echo    Sentinel Pulse Terminal
 echo  ========================================
 echo.
 echo  Starting Sentinel Pulse...
-echo  Browser will open at http://localhost:8001
+echo  Browser will open at http://localhost:8002
 echo.
 echo  Prerequisites:
 echo    - MongoDB running locally (mongod)
@@ -157,7 +157,7 @@ echo.
 echo  Press Ctrl+C to stop.
 echo.
 timeout /t 2 /nobreak > nul
-start http://localhost:8001
+start http://localhost:8002
 cd /d "%~dp0Sentinel Pulse"
 Sentinel Pulse.exe
 "@
