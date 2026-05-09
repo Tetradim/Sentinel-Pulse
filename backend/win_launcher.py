@@ -46,8 +46,16 @@ sys.path.insert(0, str(BASE_DIR))
 # Set up logger with UTF-8 encoding for console
 def _get_stream_handler():
     import sys
-    # Use stderr instead - stdout may not be initialized yet at import time
-    handler = logging.StreamHandler(sys.stderr)
+    # stdout may not be initialized at import time; stderr may be None in --noconsole exe
+    stream = sys.stderr if sys.stderr is not None else sys.stdout
+    if stream is None:
+        # Frozen --noconsole exe: no console attached, skip stream handler
+        return logging.NullHandler()
+    try:
+        stream.reconfigure(errors='replace')
+    except Exception:
+        pass
+    handler = logging.StreamHandler(stream)
     handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
     return handler
 
