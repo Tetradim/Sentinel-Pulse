@@ -1,5 +1,5 @@
-import React, { memo, useState, useCallback, useEffect } from 'react';
-import { useStore, TickerConfig } from '@/stores/useStore';
+import React, { memo, useState, useCallback, useEffect, useMemo } from 'react';
+import { useStore, TickerConfig, PricePoint } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +20,43 @@ import { toast } from 'sonner';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getMarketMeta, formatPrice, formatPriceSecondary } from '@/lib/market-utils';
+
+// ── Sparkline component ───────────────────────────────────────────────────────────────────────
+const Sparkline = ({ data, color, positive }: { data: PricePoint[], color: string, positive: boolean }) => {
+  if (!data || data.length < 2) return null;
+  
+  // Last 2 minutes (120 seconds) of data
+  const now = Date.now();
+  const recent = data.filter(p => now - p.time < 120000);
+  if (recent.length < 2) return null;
+  
+  const prices = recent.map(p => p.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  
+  const width = 80;
+  const height = 24;
+  const points = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * width;
+    const y = height - ((p - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+  
+  return (
+    <svg width={width} height={height} style={{ overflow: 'visible' }}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke={positive ? '#2dd4a0' : '#f05060'}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.8}
+      />
+    </svg>
+  );
+};
 
 interface Props {
   ticker: TickerConfig;
@@ -46,7 +83,12 @@ function fetchBrokers(): Promise<BrokerOption[]> {
           supported: b.supported,
         }))
       )
-      .catch(() => [] as BrokerOption[]);
+      .catch((err) => {
+        // Reset promise on error so next call retries
+        _brokerPromise = null;
+        console.warn('fetchBrokers failed, will retry:', err);
+        return [] as BrokerOption[];
+      });
   }
   return _brokerPromise;
 }
@@ -95,6 +137,7 @@ const cardSurface = (accent: string, isPositive: boolean, isActive: boolean, isS
 export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Props) {
   const { send } = useWebSocket();
   const price              = useStore((s) => s.prices[ticker.symbol] ?? 0);
+  const priceHistory    = useStore((s) => s.priceHistory[ticker.symbol] ?? []);
   const pnl                = useStore((s) => s.profits[ticker.symbol] ?? 0);
   const position           = useStore((s) => s.positions[ticker.symbol]);
   const currencyDisplay    = useStore((s) => s.currencyDisplay);
@@ -424,7 +467,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
 
         {/* ── Price & P&L ── */}
         <div className="flex items-end justify-between mb-3">
-          <div>
+          <div className="flex items-center gap-2">
             <div
               style={{
                 fontFamily: 'JetBrains Mono, monospace',
@@ -437,14 +480,16 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
             >
               {primaryPrice}
             </div>
-            {isNonUS && (
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>
-                {formatPriceSecondary(price, ticker, currencyDisplay, fxRates)}
-              </div>
-            )}
+            <Sparkline data={priceHistory} color={cardColor} positive={pnl >= 0} />
           </div>
+          {isNonUS && (
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>
+              {formatPriceSecondary(price, ticker, currencyDisplay, fxRates)}
+            </div>
+          )}
+        </div>
 
-          {pnl !== 0 && (
+        {pnl !== 0 && (
             <div style={{ textAlign: 'right' }}>
               <div
                 style={{

@@ -257,6 +257,11 @@ export function TradeLogSidebar() {
   const lossCount = trades.filter((t) => t.pnl < 0).length;
   const totalPnl  = trades.reduce((a, t) => a + t.pnl, 0);
 
+  // Pagination - show first 50 groups, load more on click
+  const [visibleCount, setVisibleCount] = useState(50);
+  const visibleGroups = groups.slice(0, visibleCount);
+  const hasMore = visibleCount < groups.length;
+
   return (
     <aside
       className="hidden xl:flex flex-col"
@@ -335,9 +340,24 @@ export function TradeLogSidebar() {
         className="flex-1 overflow-auto scrollbar-hide"
         style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: 3 }}
       >
-        {groups.map((g) => (
+        {visibleGroups.map((g) => (
           <GroupRow key={g.key} group={g} />
         ))}
+
+        {hasMore && (
+          <button
+            onClick={() => setVisibleCount(c => c + 50)}
+            style={{
+              padding: '6px 12px', fontSize: 10, fontFamily: 'Rajdhani, sans-serif',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 4, color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+              marginTop: 4,
+            }}
+          >
+            Show more ({groups.length - visibleCount} more)
+          </button>
+        )}
 
         {trades.length === 0 && (
           <div style={{

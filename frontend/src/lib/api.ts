@@ -1,4 +1,5 @@
-const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL || '';
+// Support both VITE_ (Vite) and REACT_APP_ (Create React App) prefixes
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL || '';
 
 export async function apiFetch(path: string, options?: RequestInit & { rawText?: boolean }) {
   const { rawText, ...fetchOptions } = options || {};
