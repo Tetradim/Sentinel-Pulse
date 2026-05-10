@@ -1,112 +1,106 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Hide scrollbar but allow scrolling */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
 @layer base {
   :root {
-    /* Dark theme (default) */
-    --background: 222 47% 4%;
-    --foreground: 213 31% 91%;
-    --card: 220 40% 8%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 6%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 25% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 263 70% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    /* ── Metal Black + Gold Design System ── */
+
+    /* Backgrounds — layered metal surfaces */
+    --metal-deep:    10 10 11;       /* #0a0a0b — page bg */
+    --metal-base:    16 16 20;       /* #101014 — header/sidebar */
+    --metal-surface: 22 22 28;       /* #16161c — cards */
+    --metal-raised:  28 28 36;       /* #1c1c24 — elevated surfaces */
+
+    /* Gold palette */
+    --gold-dim:      80 62 18;       /* #503e12 — dim gold border */
+    --gold-mid:      180 130 10;     /* #b4820a — mid gold */
+    --gold-bright:   220 168 40;     /* #dca828 — primary gold */
+    --gold-gleam:    255 220 100;    /* #ffdc64 — highlight gleam */
+
+    /* Tailwind CSS vars (HSL format for compatibility) */
+    --background:    240 5% 4%;
+    --foreground:    45 20% 88%;
+    --card:          240 10% 9%;
+    --card-foreground: 45 20% 88%;
+    --popover:       240 10% 8%;
+    --popover-foreground: 45 20% 88%;
+
+    /* Gold as primary */
+    --primary:       42 80% 52%;
+    --primary-foreground: 240 10% 8%;
+
+    --secondary:     240 8% 14%;
+    --secondary-foreground: 45 15% 75%;
+    --muted:         240 8% 18%;
+    --muted-foreground: 240 5% 50%;
+    --accent:        42 75% 45%;
+    --accent-foreground: 240 10% 8%;
+    --destructive:   0 72% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 215 20% 16%;
-    --input: 215 20% 16%;
-    --ring: 239 84% 67%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --radius: 0.625rem;
-    --success: 160 84% 39%;
-    --warning: 38 92% 50%;
+    --border:        240 8% 16%;
+    --input:         240 8% 14%;
+    --ring:          42 80% 52%;
+    --radius:        0.5rem;
+    --success:       160 70% 40%;
+    --warning:       38 90% 50%;
   }
 
-  /* Light theme */
+  /* Light mode — warm platinum, not washed-out white */
   .light {
-    --background: 0 0% 100%;
-    --foreground: 215 25% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 12%;
-    --primary: 239 84% 67%;
+    --background:    40 15% 94%;
+    --foreground:    240 15% 12%;
+    --card:          40 20% 98%;
+    --card-foreground: 240 15% 12%;
+    --popover:       40 20% 98%;
+    --popover-foreground: 240 15% 12%;
+    --primary:       42 80% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 215 25% 96%;
-    --secondary-foreground: 215 25% 12%;
-    --muted: 215 25% 96%;
-    --muted-foreground: 215 20% 45%;
-    --accent: 263 70% 58%;
+    --secondary:     40 10% 90%;
+    --secondary-foreground: 240 15% 12%;
+    --muted:         40 10% 88%;
+    --muted-foreground: 240 8% 40%;
+    --accent:        42 75% 38%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 14% 85%;
-    --input: 214 14% 85%;
-    --ring: 239 84% 67%;
+    --destructive:   0 72% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border:        40 12% 80%;
+    --input:         40 12% 85%;
+    --ring:          42 80% 40%;
   }
 
-  /* Accent color schemes */
-  .accent-blue {
-    --primary: 239 84% 67%;
-    --accent: 239 84% 67%;
-  }
-  .accent-emerald {
-    --primary: 160 84% 39%;
-    --accent: 160 84% 39%;
-  }
-  .accent-amber {
-    --primary: 38 92% 50%;
-    --accent: 38 92% 50%;
-  }
-  .accent-rose {
-    --primary: 350 85% 55%;
-    --accent: 350 85% 55%;
-  }
-  .accent-violet {
-    --primary: 270 65% 55%;
-    --accent: 270 65% 55%;
-  }
-  .accent-cyan {
-    --primary: 187 85% 53%;
-    --accent: 187 85% 53%;
-  }
+  /* Accent overrides — keep gold as default, others for user preference */
+  .accent-gold   { --primary: 42 80% 52%; --ring: 42 80% 52%; }
+  .accent-blue   { --primary: 217 91% 60%; --ring: 217 91% 60%; }
+  .accent-emerald{ --primary: 160 70% 40%; --ring: 160 70% 40%; }
+  .accent-amber  { --primary: 38 92% 50%; --ring: 38 92% 50%; }
+  .accent-rose   { --primary: 350 85% 55%; --ring: 350 85% 55%; }
+  .accent-violet { --primary: 270 65% 55%; --ring: 270 65% 55%; }
+  .accent-cyan   { --primary: 187 85% 53%; --ring: 187 85% 53%; }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: 'Rajdhani', 'IBM Plex Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #0a0a0b;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Syne', system-ui, sans-serif;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -115,59 +109,162 @@
     font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
     font-feature-settings: 'tnum' on, 'lnum' on;
   }
+
+  /* Metal glass effect */
   .glass {
-    @apply backdrop-blur-xl border border-white/10;
-    background: rgba(15, 23, 42, 0.7);
+    backdrop-blur-xl: blur(20px);
+    background: rgba(16, 16, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
-  .glow-success {
-    box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.35);
+
+  /* Gold gleam border — animating shimmer along top edge */
+  .gold-border-top {
+    position: relative;
   }
-  .glow-danger {
-    box-shadow: 0 0 15px -3px rgba(239, 68, 68, 0.35);
+  .gold-border-top::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(180, 130, 10, 0.4) 20%,
+      rgba(220, 168, 40, 0.9) 50%,
+      rgba(255, 220, 100, 1) 55%,
+      rgba(220, 168, 40, 0.9) 60%,
+      rgba(180, 130, 10, 0.4) 80%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: gleam-sweep 5s ease-in-out infinite;
+    z-index: 1;
   }
-  .glow-primary {
-    box-shadow: 0 0 12px -3px rgba(99, 102, 241, 0.5);
+
+  @keyframes gleam-sweep {
+    0%   { background-position: -100% 0; }
+    60%  { background-position: 200% 0; }
+    100% { background-position: 200% 0; }
   }
-  .glow-accent {
-    box-shadow: 0 0 12px -3px rgba(139, 92, 246, 0.5);
+
+  /* Static gold border (no animation) */
+  .gold-border {
+    border-color: rgba(180, 130, 10, 0.35) !important;
   }
+  .gold-border-bright {
+    border-color: rgba(220, 168, 40, 0.6) !important;
+    box-shadow: 0 0 12px -4px rgba(220, 168, 40, 0.3);
+  }
+
+  /* Metal card surface */
+  .metal-card {
+    background: linear-gradient(
+      145deg,
+      rgba(28, 28, 36, 1) 0%,
+      rgba(22, 22, 28, 1) 40%,
+      rgba(20, 20, 26, 1) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .metal-card:hover {
+    border-color: rgba(180, 130, 10, 0.3);
+  }
+
+  /* Glow utilities — kept for status */
+  .glow-success { box-shadow: 0 0 16px -4px rgba(45, 212, 160, 0.3); }
+  .glow-danger  { box-shadow: 0 0 16px -4px rgba(239, 68, 68, 0.3); }
+  .glow-gold    { box-shadow: 0 0 16px -4px rgba(220, 168, 40, 0.35); }
+  .glow-primary { box-shadow: 0 0 12px -3px rgba(220, 168, 40, 0.4); }
+
+  /* Text gold gradient */
+  .text-gold {
+    background: linear-gradient(135deg, #b4820a 0%, #dca828 40%, #ffdc64 55%, #dca828 70%, #b4820a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Neon toggle */
   .neon-toggle {
-    box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 8px rgba(220, 168, 40, 0.5);
   }
 }
 
-@layer base {
-  [data-debug-wrapper="true"] {
-    display: contents !important;
-  }
-  [data-debug-wrapper="true"] > * {
-    margin-left: inherit; margin-right: inherit;
-    margin-top: inherit; margin-bottom: inherit;
-    padding-left: inherit; padding-right: inherit;
-    padding-top: inherit; padding-bottom: inherit;
-    column-gap: inherit; row-gap: inherit; gap: inherit;
-    border-left-width: inherit; border-right-width: inherit;
-    border-top-width: inherit; border-bottom-width: inherit;
-    border-left-style: inherit; border-right-style: inherit;
-    border-top-style: inherit; border-bottom-style: inherit;
-    border-left-color: inherit; border-right-color: inherit;
-    border-top-color: inherit; border-bottom-color: inherit;
-  }
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #0a0a0b; }
+::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(220, 168, 40, 0.3); }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: hsl(var(--background)); }
-::-webkit-scrollbar-thumb { background: hsl(var(--muted)); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
-
-/* Animations */
+/* ── Shimmer skeleton ── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
+  0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 .animate-shimmer {
-  background: linear-gradient(90deg, hsl(var(--card)) 25%, hsl(var(--secondary)) 50%, hsl(var(--card)) 75%);
+  background: linear-gradient(90deg, #16161c 25%, #1c1c24 50%, #16161c 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Ticker card metal accent line ── */
+.ticker-accent-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(90deg, transparent, var(--card-accent, #dca828), transparent);
+  opacity: 0.7;
+}
+
+/* ── Tab active indicator ── */
+.tab-gold-indicator {
+  position: relative;
+}
+.tab-gold-indicator.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #dca828, #ffdc64, #dca828, transparent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ── Resize handle (for ticker cards) ── */
+.resize-handle {
+  position: absolute;
+  bottom: 4px; right: 4px;
+  width: 12px; height: 12px;
+  opacity: 0.25;
+  transition: opacity 0.15s;
+  cursor: se-resize;
+}
+.resize-handle::before,
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  background: #dca828;
+  border-radius: 1px;
+}
+.resize-handle::before { bottom: 3px; right: 0; width: 10px; height: 1px; }
+.resize-handle::after  { bottom: 0; right: 3px; width: 1px; height: 10px; }
+.group:hover .resize-handle,
+*:hover > .resize-handle { opacity: 0.6; }
+
+/* ── Pulsing status dot ── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(45, 212, 160, 0.4); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 4px rgba(45, 212, 160, 0); }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* ── Market status badge ── */
+.market-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }

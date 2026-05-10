@@ -17,7 +17,6 @@ interface TradeGroup {
 function groupTrades(trades: TradeLog[]): TradeGroup[] {
   const groups: TradeGroup[] = [];
   let current: TradeGroup | null = null;
-
   for (const t of trades) {
     if (current && current.symbol === t.symbol && current.side === t.side) {
       current.trades.push(t);
@@ -27,14 +26,9 @@ function groupTrades(trades: TradeLog[]): TradeGroup[] {
         current.trades.reduce((s, tr) => s + tr.price * tr.quantity, 0) / current.totalQty;
     } else {
       current = {
-        key: t.id,
-        symbol: t.symbol,
-        side: t.side,
-        trades: [t],
-        avgPrice: t.price,
-        totalQty: t.quantity,
-        totalPnl: t.pnl,
-        firstTime: t.timestamp,
+        key: t.id, symbol: t.symbol, side: t.side,
+        trades: [t], avgPrice: t.price, totalQty: t.quantity,
+        totalPnl: t.pnl, firstTime: t.timestamp,
       };
       groups.push(current);
     }
@@ -42,66 +36,84 @@ function groupTrades(trades: TradeLog[]): TradeGroup[] {
   return groups;
 }
 
-const sideColors: Record<string, string> = {
-  BUY: 'text-emerald-400',
-  SELL: 'text-blue-400',
-  STOP: 'text-red-400',
-  TRAILING_STOP: 'text-amber-400',
+// Side color map
+const sideStyle: Record<string, { color: string; bg: string; label: string }> = {
+  BUY:           { color: '#2dd4a0', bg: 'rgba(45,212,160,0.08)',  label: 'B' },
+  SELL:          { color: '#4da8f0', bg: 'rgba(77,168,240,0.08)',  label: 'S' },
+  STOP:          { color: '#f05060', bg: 'rgba(240,80,96,0.08)',   label: '⚡' },
+  TRAILING_STOP: { color: '#dca828', bg: 'rgba(220,168,40,0.08)', label: 'TS' },
 };
-
-const sideBg: Record<string, string> = {
-  BUY: 'bg-emerald-400/5',
-  SELL: 'bg-blue-400/5',
-  STOP: 'bg-red-400/5',
-  TRAILING_STOP: 'bg-amber-400/5',
-};
-
-function SideLabel({ side }: { side: string }) {
-  return (
-    <span className={`font-bold w-5 shrink-0 ${sideColors[side] || 'text-foreground'}`}>
-      {side === 'TRAILING_STOP' ? 'TS' : side.charAt(0)}
-    </span>
-  );
-}
 
 function TradeDetailMini({ trade }: { trade: TradeLog }) {
-  const isSell = trade.side !== 'BUY';
-  const isLoss = trade.pnl < 0;
+  const isLoss  = trade.pnl < 0;
+  const isSell  = trade.side !== 'BUY';
 
   return (
-    <div className={`rounded px-2 py-1.5 text-[10px] font-mono space-y-1 ${isLoss ? 'bg-red-500/5' : 'bg-secondary/20'}`}>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground/70">{new Date(trade.timestamp).toLocaleTimeString()}</span>
-        <div className="flex items-center gap-1.5">
+    <div
+      style={{
+        borderRadius: 5, padding: '6px 8px',
+        background: isLoss ? 'rgba(240,80,96,0.06)' : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${isLoss ? 'rgba(240,80,96,0.12)' : 'rgba(255,255,255,0.04)'}`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>
+          {new Date(trade.timestamp).toLocaleTimeString()}
+        </span>
+        <div style={{ display: 'flex', gap: 3 }}>
           {trade.order_type && (
-            <span className={`text-[8px] font-bold px-1 rounded ${trade.order_type === 'MARKET' ? 'bg-orange-500/15 text-orange-400' : 'bg-cyan-500/15 text-cyan-400'}`}>
+            <span style={{
+              fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
+              fontFamily: 'JetBrains Mono, monospace',
+              ...(trade.order_type === 'MARKET'
+                ? { background: 'rgba(249,115,22,0.15)', color: '#f97316' }
+                : { background: 'rgba(77,168,240,0.15)', color: '#4da8f0' }
+              ),
+            }}>
               {trade.order_type === 'MARKET' ? 'MKT' : 'LMT'}
             </span>
           )}
           {trade.rule_mode && (
-            <span className={`text-[8px] px-1 rounded ${trade.rule_mode === 'PERCENT' ? 'bg-violet-500/15 text-violet-400' : 'bg-teal-500/15 text-teal-400'}`}>
+            <span style={{
+              fontSize: 8, padding: '1px 4px', borderRadius: 3,
+              fontFamily: 'JetBrains Mono, monospace',
+              ...(trade.rule_mode === 'PERCENT'
+                ? { background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }
+                : { background: 'rgba(20,184,166,0.15)', color: '#14b8a6' }
+              ),
+            }}>
               {trade.rule_mode === 'PERCENT' ? '%' : '$'}
             </span>
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">Fill ${trade.price.toFixed(2)} x{trade.quantity.toFixed(4)}</span>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+          ${trade.price.toFixed(2)} × {trade.quantity.toFixed(4)}
+        </span>
         {trade.pnl !== 0 && (
-          <span className={isLoss ? 'text-red-400 font-bold' : 'text-emerald-400'}>
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700,
+            color: isLoss ? '#f05060' : '#2dd4a0',
+          }}>
             {trade.pnl > 0 ? '+' : ''}{trade.pnl.toFixed(2)}
           </span>
         )}
       </div>
+
       {isSell && trade.entry_price > 0 && (
-        <div className="flex items-center justify-between text-muted-foreground/60">
-          <span>Entry ${trade.entry_price.toFixed(2)} → Target ${(trade.target_price || 0).toFixed(2)}</span>
+        <div style={{ marginTop: 2, fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>
+          Entry ${trade.entry_price.toFixed(2)} → ${(trade.target_price || 0).toFixed(2)}
         </div>
       )}
+
       {isLoss && trade.entry_price > 0 && (
-        <div className="flex items-center gap-1 text-red-400/80">
-          <AlertTriangle size={8} />
-          <span>Loss {((trade.price / trade.entry_price - 1) * 100).toFixed(2)}%</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
+          <AlertTriangle size={8} style={{ color: '#f05060' }} />
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(240,80,96,0.7)' }}>
+            Loss {((trade.price / trade.entry_price - 1) * 100).toFixed(2)}%
+          </span>
         </div>
       )}
     </div>
@@ -110,45 +122,89 @@ function TradeDetailMini({ trade }: { trade: TradeLog }) {
 
 function GroupRow({ group }: { group: TradeGroup }) {
   const [expanded, setExpanded] = useState(false);
-  const count = group.trades.length;
+  const count    = group.trades.length;
   const isSingle = count === 1;
-  const isLoss = group.totalPnl < 0;
+  const isLoss   = group.totalPnl < 0;
+  const side     = sideStyle[group.side] || { color: '#f0ead6', bg: 'rgba(255,255,255,0.04)', label: group.side[0] };
 
   return (
-    <div className={`rounded-md ${!isSingle ? sideBg[group.side] : ''} ${isLoss ? 'ring-1 ring-red-500/20' : ''}`}>
+    <div
+      style={{
+        borderRadius: 6,
+        border: `1px solid ${isLoss ? 'rgba(240,80,96,0.12)' : 'rgba(255,255,255,0.04)'}`,
+        background: expanded ? 'rgba(255,255,255,0.02)' : 'transparent',
+        overflow: 'hidden',
+        transition: 'background 0.15s',
+      }}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-secondary/50 transition-colors font-mono text-xs cursor-pointer`}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
         data-testid={`trade-group-${group.key}`}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <SideLabel side={group.side} />
-          <span className="font-semibold text-foreground truncate">{group.symbol}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          {/* Side indicator */}
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700,
+            minWidth: 18, color: side.color,
+          }}>
+            {side.label}
+          </span>
+
+          <span style={{
+            fontFamily: 'Syne, system-ui, sans-serif', fontSize: 13, fontWeight: 700,
+            color: '#f0ead6', letterSpacing: '0.04em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {group.symbol}
+          </span>
+
           {!isSingle && (
-            <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
-              x{count}
+            <span style={{
+              fontSize: 9, fontFamily: 'JetBrains Mono, monospace',
+              padding: '1px 5px', borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)',
+            }}>
+              ×{count}
             </span>
           )}
-          {/* Show badges for single trades */}
+
+          {/* Order type badge for single trades */}
           {isSingle && group.trades[0]?.order_type && (
-            <span className={`text-[8px] font-bold px-1 rounded ${group.trades[0].order_type === 'MARKET' ? 'bg-orange-500/15 text-orange-400' : 'bg-cyan-500/15 text-cyan-400'}`}>
+            <span style={{
+              fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
+              fontFamily: 'JetBrains Mono, monospace',
+              ...(group.trades[0].order_type === 'MARKET'
+                ? { background: 'rgba(249,115,22,0.15)', color: '#f97316' }
+                : { background: 'rgba(77,168,240,0.15)', color: '#4da8f0' }
+              ),
+            }}>
               {group.trades[0].order_type === 'MARKET' ? 'MKT' : 'LMT'}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-muted-foreground">${group.avgPrice.toFixed(2)}</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
+            ${group.avgPrice.toFixed(2)}
+          </span>
           {group.totalPnl !== 0 && (
-            <span className={`font-bold ${group.totalPnl > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {group.totalPnl > 0 ? '+' : ''}
-              {group.totalPnl.toFixed(2)}
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700,
+              color: group.totalPnl > 0 ? '#2dd4a0' : '#f05060',
+            }}>
+              {group.totalPnl > 0 ? '+' : ''}{group.totalPnl.toFixed(2)}
             </span>
           )}
-          {expanded ? (
-            <ChevronUp size={10} className="text-muted-foreground" />
-          ) : (
-            <ChevronDown size={10} className="text-muted-foreground" />
-          )}
+          {expanded
+            ? <ChevronUp size={10} style={{ color: 'rgba(255,255,255,0.2)' }} />
+            : <ChevronDown size={10} style={{ color: 'rgba(255,255,255,0.2)' }} />
+          }
         </div>
       </button>
 
@@ -158,20 +214,29 @@ function GroupRow({ group }: { group: TradeGroup }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            transition={{ duration: 0.15 }}
+            style={{ overflow: 'hidden' }}
           >
-            <div className="px-2 pb-2 space-y-1">
+            <div style={{ padding: '0 8px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {group.trades.map((t) => (
                 <TradeDetailMini key={t.id} trade={t} />
               ))}
+
               {!isSingle && (
-                <div className="flex items-center justify-between text-[10px] font-mono text-foreground/70 pt-1 px-2 border-t border-border/30">
-                  <span>Total</span>
-                  <div className="flex items-center gap-2">
-                    <span>avg ${group.avgPrice.toFixed(2)}</span>
-                    <span>x{group.totalQty.toFixed(4)}</span>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '5px 8px 0',
+                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                  marginTop: 2,
+                }}>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>
+                    Total
+                  </span>
+                  <div style={{ display: 'flex', gap: 8, fontFamily: 'JetBrains Mono, monospace', fontSize: 9 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>avg ${group.avgPrice.toFixed(2)}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{group.totalQty.toFixed(4)}</span>
                     {group.totalPnl !== 0 && (
-                      <span className={group.totalPnl > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      <span style={{ fontWeight: 700, color: group.totalPnl > 0 ? '#2dd4a0' : '#f05060' }}>
                         {group.totalPnl > 0 ? '+' : ''}{group.totalPnl.toFixed(2)}
                       </span>
                     )}
@@ -187,40 +252,104 @@ function GroupRow({ group }: { group: TradeGroup }) {
 }
 
 export function TradeLogSidebar() {
-  const trades = useStore((s) => s.trades);
-  const groups = groupTrades(trades);
+  const trades  = useStore((s) => s.trades);
+  const groups  = groupTrades(trades);
   const lossCount = trades.filter((t) => t.pnl < 0).length;
+  const totalPnl  = trades.reduce((a, t) => a + t.pnl, 0);
 
   return (
     <aside
-      className="hidden xl:flex flex-col w-80 border-l border-border glass"
+      className="hidden xl:flex flex-col"
+      style={{
+        width: 280,
+        borderLeft: '1px solid rgba(255,255,255,0.05)',
+        background: '#0e0e12',
+        position: 'relative',
+      }}
       data-testid="trade-log-sidebar"
     >
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <h2 className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
+      {/* Gold gleam on left edge */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, bottom: 0, width: 1,
+        background: 'linear-gradient(180deg, transparent, rgba(220,168,40,0.2) 30%, rgba(220,168,40,0.2) 70%, transparent)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Header */}
+      <div style={{
+        padding: '10px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <span style={{
+          fontFamily: 'Syne, system-ui, sans-serif', fontSize: 10,
+          fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.3)',
+        }}>
           Live Activity
-        </h2>
-        <div className="flex items-center gap-2">
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {lossCount > 0 && (
-            <span className="text-[10px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded-full font-mono" data-testid="loss-count-badge">
+            <span
+              data-testid="loss-count-badge"
+              style={{
+                fontSize: 9, fontFamily: 'JetBrains Mono, monospace',
+                padding: '2px 6px', borderRadius: 8,
+                background: 'rgba(240,80,96,0.1)', color: '#f05060',
+                border: '1px solid rgba(240,80,96,0.2)',
+              }}
+            >
               {lossCount} loss{lossCount !== 1 ? 'es' : ''}
             </span>
           )}
           {trades.length > 0 && (
-            <span className="text-[10px] text-muted-foreground/60 font-mono">
-              {trades.length} trades / {groups.length} groups
+            <span style={{ fontSize: 9, fontFamily: 'JetBrains Mono, monospace', color: 'rgba(255,255,255,0.2)' }}>
+              {trades.length}t / {groups.length}g
             </span>
           )}
         </div>
       </div>
-      <div className="flex-1 overflow-auto px-2 py-2 space-y-0.5">
+
+      {/* Running P&L strip */}
+      {trades.length > 0 && (
+        <div style={{
+          padding: '6px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: totalPnl >= 0 ? 'rgba(45,212,160,0.04)' : 'rgba(240,80,96,0.04)',
+        }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Session P&L
+          </span>
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
+            color: totalPnl >= 0 ? '#2dd4a0' : '#f05060',
+          }}>
+            {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* Trade list */}
+      <div
+        className="flex-1 overflow-auto scrollbar-hide"
+        style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: 3 }}
+      >
         {groups.map((g) => (
           <GroupRow key={g.key} group={g} />
         ))}
+
         {trades.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-xs">
-            <p>No activity yet</p>
-            <p className="mt-1 text-muted-foreground/60">Trades will appear here in real-time</p>
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', height: 160, gap: 6,
+          }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.06em' }}>
+              No activity yet
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.1)', fontFamily: 'JetBrains Mono, monospace' }}>
+              Trades appear in real-time
+            </span>
           </div>
         )}
       </div>
