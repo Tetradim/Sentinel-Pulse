@@ -110,6 +110,8 @@ def add_jitter(base_seconds: float, jitter_pct: float = 0.2) -> float:
 
 
 async def price_broadcast_loop():
+    from pymongo.errors import ServerSelectionTimeoutError
+    
     while True:
         try:
             tickers = await deps.db.tickers.find({}, {"_id": 0}).to_list(100)
@@ -149,6 +151,9 @@ async def price_broadcast_loop():
                     "simulate_24_7": deps.engine.simulate_24_7,
                     "market_hours_only": deps.engine.market_hours_only,
                 })
+        except ServerSelectionTimeoutError as e:
+            # MongoDB dropped - log but don't crash the loop
+            deps.logger.warning(f"MongoDB temporarily unavailable: {e}")
         except Exception as e:
             deps.logger.error(f"Price broadcast error: {e}", exc_info=True)
         await asyncio.sleep(add_jitter(2))

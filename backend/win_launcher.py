@@ -25,7 +25,7 @@ from pathlib import Path
 
 # Current version - match setup.iss MyAppVersion
 CURRENT_VERSION = "1.0.0"
-UPDATE_REPO = "Tetradim/Set-Trader"
+UPDATE_REPO = "Tetradim/Sentinel-Pulse"
 UPDATE_URL = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 
 # Set Windows console to UTF-8 mode BEFORE any other imports
