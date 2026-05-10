@@ -9,12 +9,13 @@ interface Props {
 interface State {
   hasError: boolean;
   error: string;
+  retryKey: number;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: '' };
+    this.state = { hasError: false, error: '', retryKey: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -24,6 +25,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, info.componentStack);
   }
+
+  handleRetry = () => {
+    // Increment key to force full remount of children
+    this.setState((s) => ({ hasError: false, error: '', retryKey: s.retryKey + 1 }));
+  };
 
   render() {
     if (this.state.hasError) {
@@ -35,7 +41,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </p>
           <p className="text-xs text-muted-foreground/60 max-w-md text-center">{this.state.error}</p>
           <button
-            onClick={() => this.setState({ hasError: false, error: '' })}
+            onClick={this.handleRetry}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all"
           >
             <RefreshCw size={12} /> Retry
@@ -43,6 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         </div>
       );
     }
-    return this.props.children;
+    // Force remount with key on retry
+    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>;
   }
 }

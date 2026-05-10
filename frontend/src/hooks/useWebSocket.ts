@@ -26,6 +26,7 @@ export function useWebSocket() {
     socket.current = ws;
 
     ws.onopen = () => {
+      reconnectDelay.current = 3000; // Reset to 3s on successful connect
       store.setConnected(true);
     };
 
@@ -116,9 +117,13 @@ export function useWebSocket() {
       }
     };
 
+    const reconnectDelay = useRef(3000); // Start at 3s, exponential: 3s→6s→12s→30s...→5min max
+    
     ws.onclose = () => {
       store.setConnected(false);
-      reconnect.current = setTimeout(connect, 3000);
+      const delay = Math.min(reconnectDelay.current, 300000); // Cap at 5 minutes
+      reconnectDelay.current = Math.min(reconnectDelay.current * 2, 300000); // Double each attempt
+      reconnect.current = setTimeout(connect, delay);
     };
 
     ws.onerror = () => {
