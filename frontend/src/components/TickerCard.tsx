@@ -21,20 +21,20 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getMarketMeta, formatPrice, formatPriceSecondary } from '@/lib/market-utils';
 
-// ── Sparkline component ───────────────────────────────────────────────────────────────────────
+// Sparkline component for mini price chart
 const Sparkline = ({ data, color, positive }: { data: PricePoint[], color: string, positive: boolean }) => {
   if (!data || data.length < 2) return null;
-  
+
   // Last 2 minutes (120 seconds) of data
   const now = Date.now();
   const recent = data.filter(p => now - p.time < 120000);
   if (recent.length < 2) return null;
-  
+
   const prices = recent.map(p => p.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   const range = max - min || 1;
-  
+
   const width = 80;
   const height = 24;
   const points = prices.map((p, i) => {
@@ -42,7 +42,7 @@ const Sparkline = ({ data, color, positive }: { data: PricePoint[], color: strin
     const y = height - ((p - min) / range) * height;
     return `${x},${y}`;
   }).join(' ');
-  
+
   return (
     <svg width={width} height={height} style={{ overflow: 'visible' }}>
       <polyline
@@ -93,7 +93,7 @@ function fetchBrokers(): Promise<BrokerOption[]> {
   return _brokerPromise;
 }
 
-// Gold-first color palette — metallic tones for the card accent line
+// Gold-first color palette - metallic tones for the card accent line
 const CARD_COLORS = [
   '#dca828', // gold (default)
   '#2dd4a0', // emerald
@@ -107,7 +107,7 @@ const CARD_COLORS = [
   '#94a3b8', // slate
 ];
 
-// ── Helper: gold-tinted surface with accent line ──────────────────────────────
+// -- Helper: gold-tinted surface with accent line ------------------------------
 const cardSurface = (accent: string, isPositive: boolean, isActive: boolean, isSelected: boolean) => ({
   base: {
     position: 'relative' as const,
@@ -242,7 +242,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
 
   const surfaces = cardSurface(cardColor, isPositive, isActive, isSelected);
 
-  // ── Compact view ─────────────────────────────────────────────────────────────
+  // -- Compact view -------------------------------------------------------------
   if (compactMode) {
     return (
       <div
@@ -297,7 +297,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
     );
   }
 
-  // ── Full card view ────────────────────────────────────────────────────────────
+  // -- Full card view ------------------------------------------------------------
   return (
     <div
       ref={setNodeRef}
@@ -313,7 +313,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
         (e.currentTarget as HTMLElement).style.borderColor = surfaces.base.border.split(' ').slice(2).join(' ');
       }}
     >
-      {/* ── Accent top line (metal gleam) ── */}
+      {/* -- Accent top line (metal gleam) -- */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 2,
         background: isActive
@@ -322,7 +322,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
         opacity: isActive ? 1 : 0.5,
       }} />
 
-      {/* ── Background glow blob ── */}
+      {/* -- Background glow blob -- */}
       {isActive && (
         <div style={{
           position: 'absolute', top: -32, right: -32,
@@ -333,20 +333,20 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
         }} />
       )}
 
-      {/* ── Auto-stopped banner ── */}
+      {/* -- Auto-stopped banner -- */}
       {ticker.auto_stopped && (
         <div style={{
           background: 'rgba(240,80,96,0.12)', borderBottom: '1px solid rgba(240,80,96,0.2)',
           padding: '3px 12px', fontSize: 9, letterSpacing: '0.12em',
           color: '#f05060', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
         }}>
-          ⚠ Auto-stopped — {ticker.auto_stop_reason || 'Risk limit hit'}
+          ⚠ Auto-stopped - {ticker.auto_stop_reason || 'Risk limit hit'}
         </div>
       )}
 
       <div style={{ padding: '12px 14px 10px' }}>
 
-        {/* ── Title bar ── */}
+        {/* -- Title bar -- */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             {/* Drag handle */}
@@ -462,12 +462,12 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         </div>
 
-        {/* ── Separator ── */}
+        {/* -- Separator -- */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '0 0 10px' }} />
 
-        {/* ── Price & P&L ── */}
+        {/* -- Price & P&L -- */}
         <div className="flex items-end justify-between mb-3">
-          <div className="flex items-center gap-2">
+          <div>
             <div
               style={{
                 fontFamily: 'JetBrains Mono, monospace',
@@ -480,16 +480,14 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
             >
               {primaryPrice}
             </div>
-            <Sparkline data={priceHistory} color={cardColor} positive={pnl >= 0} />
+            {isNonUS && (
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>
+                {formatPriceSecondary(price, ticker, currencyDisplay, fxRates)}
+              </div>
+            )}
           </div>
-          {isNonUS && (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>
-              {formatPriceSecondary(price, ticker, currencyDisplay, fxRates)}
-            </div>
-          )}
-        </div>
 
-        {pnl !== 0 && (
+          {pnl !== 0 && (
             <div style={{ textAlign: 'right' }}>
               <div
                 style={{
@@ -509,7 +507,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           )}
         </div>
 
-        {/* ── P&L progress bar ── */}
+        {/* -- P&L progress bar -- */}
         {pnl !== 0 && (
           <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1, marginBottom: 10, overflow: 'hidden' }}>
             <div style={{
@@ -524,7 +522,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         )}
 
-        {/* ── Open position ── */}
+        {/* -- Open position -- */}
         {position && position.quantity > 0 && (
           <div style={{
             marginBottom: 10, padding: '6px 10px', borderRadius: 6,
@@ -541,7 +539,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         )}
 
-        {/* ── Broker chips ── */}
+        {/* -- Broker chips -- */}
         {selectedBrokers.length > 0 && (
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
             {selectedBrokers.map((b) => {
@@ -569,7 +567,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         )}
 
-        {/* ── Quick edit: buy / sell / stop ── */}
+        {/* -- Quick edit: buy / sell / stop -- */}
         <div style={{
           borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10, marginTop: 2,
         }}>
@@ -652,7 +650,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         </div>
 
-        {/* ── Footer: configure / take profit / delete ── */}
+        {/* -- Footer: configure / take profit / delete -- */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
           <button
             onClick={() => onConfigOpen(ticker.symbol)}
@@ -705,7 +703,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen }: Pro
           </div>
         </div>
 
-        {/* ── Resize handle (visual only — actual resize via CSS resize or future impl) ── */}
+        {/* -- Resize handle (visual only - actual resize via CSS resize or future impl) -- */}
         <div className="resize-handle" />
       </div>
     </div>
