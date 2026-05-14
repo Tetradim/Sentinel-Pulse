@@ -811,9 +811,12 @@ class TradingEngine:
                     {"symbol": sym, "side": "BUY"}, {"_id": 0, "timestamp": 1}, sort=[("timestamp", -1)]
                 )
                 if last_buy:
-                    buy_date = datetime.fromisoformat(last_buy["timestamp"]).date()
-                    today = datetime.now(timezone.utc).date()
-                    if buy_date >= today:
+                    # Use ET (DST-aware) for trading day calculation, not UTC
+                    # Pattern Day Trader rule: wait one trading day, not calendar day
+                    buy_dt = datetime.fromisoformat(last_buy["timestamp"]).astimezone(_ET)
+                    buy_date = buy_dt.date()
+                    today_et = datetime.now(_ET).date()
+                    if buy_date >= today_et:
                         return
 
             # --- OPENING BELL MODE ---
