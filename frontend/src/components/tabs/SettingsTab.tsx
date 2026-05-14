@@ -653,9 +653,24 @@ function BrokerAllocationsSection() {
   const [editValues, setEditValues] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
-    apiFetch('/api/brokers')
-      .then((data: any[]) => setBrokers(data.filter(b => b.supported).map(b => ({ id: b.id, name: b.name, color: b.color }))))
-      .catch(() => {});
+    async function loadBrokers() {
+      try {
+        const data: any[] = await apiFetch('/api/brokers');
+        setBrokers(data.filter(b => b.supported).map(b => ({ id: b.id, name: b.name, color: b.color })));
+      } catch (err) {
+        console.warn('Failed to load brokers, retrying...');
+        // Retry once after 2s in case backend was starting up
+        setTimeout(async () => {
+          try {
+            const data: any[] = await apiFetch('/api/brokers');
+            setBrokers(data.filter(b => b.supported).map(b => ({ id: b.id, name: b.name, color: b.color })));
+          } catch {
+            console.error('Broker load failed on retry');
+          }
+        }, 2000);
+      }
+    }
+    loadBrokers();
   }, []);
 
   // Init edit values from tickers — use memoized key to prevent infinite loop
