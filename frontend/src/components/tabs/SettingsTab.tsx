@@ -22,6 +22,9 @@ import {
   Plug,
   Shield,
   Zap,
+  CircuitBoard,
+  Percent,
+  DollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +42,12 @@ export function SettingsTab() {
   const [balanceText, setBalanceText] = useState('0');
   const [balanceValue, setBalanceValue] = useState(0);
   const [allocated, setAllocated] = useState(0);
+  
+  // Global daily drawdown limit (portfolio-level circuit breaker)
+  const [drawdownEnabled, setDrawdownEnabled] = useState(false);
+  const [drawdownLimitText, setDrawdownLimitText] = useState('3');
+  const [drawdownLimitValue, setDrawdownLimitValue] = useState(3);
+  const [drawdownType, setDrawdownType] = useState<'percent' | 'cash'>('percent');
 
   useEffect(() => {
     apiFetch('/api/settings')
@@ -58,6 +67,20 @@ export function SettingsTab() {
         useStore.getState().setPaperAfterHours(data.paper_after_hours || false);
         useStore.getState().setIncrementStep(data.increment_step ?? 0.5);
         useStore.getState().setDecrementStep(data.decrement_step ?? 0.5);
+        
+        // Load global daily drawdown settings
+        if (data.global_daily_drawdown !== undefined) {
+          setDrawdownEnabled(data.global_daily_drawdown.enabled ?? false);
+          setDrawdownLimitValue(data.global_daily_drawdown.limit ?? 3);
+          setDrawdownLimitText(String(data.global_daily_drawdown.limit ?? 3));
+          setDrawdownType(data.global_daily_drawdown.type ?? 'percent');
+          useStore.getState().setGlobalDailyDrawdown(
+            data.global_daily_drawdown.enabled ?? false,
+            data.global_daily_drawdown.limit ?? 3,
+            data.global_daily_drawdown.type ?? 'percent'
+          );
+        }
+        
         if (data.account_balance !== undefined) {
           useStore.getState().setAccountBalance(data.account_balance, data.allocated ?? 0, data.available ?? 0);
         }
@@ -76,11 +99,17 @@ export function SettingsTab() {
           increment_step: incStep,
           decrement_step: decStep,
           account_balance: balanceValue,
+          global_daily_drawdown: {
+            enabled: drawdownEnabled,
+            limit: drawdownLimitValue,
+            type: drawdownType,
+          },
         }),
       });
       // Update store with new step values
       useStore.getState().setIncrementStep(incStep);
       useStore.getState().setDecrementStep(decStep);
+      useStore.getState().setGlobalDailyDrawdown(drawdownEnabled, drawdownLimitValue, drawdownType);
       setTgConnected(res.telegram_running || false);
       if (res.telegram_running) {
         toast.success('Settings saved. Telegram bot connected!');
@@ -182,6 +211,102 @@ export function SettingsTab() {
 
       {/* Trading Mode Toggle */}
       <TradingModeSection />
+
+      {/* Global Daily Drawdown Limit (Portfolio-Level Circuit Breaker) */}
+      <section className="glass rounded-xl border border-border p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CircuitBoard size={18} className="text-red-400" />
+            <h3 className="text-sm font-bold text-foreground">Global Daily Drawdown Limit</h3>
+          </div>
+          <Switch
+            data-testid="drawdown-toggle"
+            checked={drawdownEnabled}
+            onCheckedChange={setDrawdownEnabled}
+            className="data-[state=checked]:bg-red-500"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Portfolio-level circuit breaker. If total daily losses exceed this limit, all bots pause for the rest of the day.
+          This prevents cascading drawdowns when multiple tickers hit stop-loss simultaneously.
+        </p>
+        {drawdownEnabled && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
+                {drawdownType === 'percent' ? (
+                  <Percent size={10} className="text-amber-400" />
+                ) : (
+                  <DollarSign size={10} className="text-emerald-400" />
+                )}
+                {drawdownType === 'percent' ? 'Limit (%)' : 'Limit ($)'}
+              </label>
+              <input
+                data-testid="drawdown-limit-input"
+                type="text"
+                inputMode="decimal"
+                value={drawdownLimitText}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (/^\d*\.?\d*$/.test(raw)) {
+                    setDrawdownLimitText(raw);
+                  }
+                }}
+                onBlur={() => {
+                  const num = parseFloat(drawdownLimitText);
+                  if (!isNaN(num) && num > 0) {
+                    setDrawdownLimitValue(num);
+                  } else {
+                    setDrawdownLimitText(String(drawdownLimitValue));
+                  }
+                }}
+                className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background text-foreground"
+                placeholder={drawdownType === 'percent' ? 'e.g. 3' : 'e.g. 3000'}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
+                <CircuitBoard size={10} className="text-red-400" /> Type
+              </label>
+              <div className="flex rounded-lg overflow-hidden border border-border">
+                <button
+                  type="button"
+                  onClick={() => setDrawdownType('percent')}
+                  className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1 ${
+                    drawdownType === 'percent'
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Percent size={12} /> Percent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawdownType('cash')}
+                  className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1 ${
+                    drawdownType === 'cash'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <DollarSign size={12} /> Cash
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {drawdownEnabled && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+            <p className="text-xs text-red-400 font-medium">
+              When enabled: All bots will pause automatically when daily P&L drops below{' '}
+              {drawdownType === 'percent'
+                ? `${drawdownLimitValue}% of account balance`
+                : `$${drawdownLimitValue.toLocaleString()}`
+              }
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* Broker Allocations per Ticker */}
       <BrokerAllocationsSection />
