@@ -5,9 +5,9 @@ export async function apiFetch(path: string, options?: RequestInit & { rawText?:
   const { rawText, ...fetchOptions } = options || {};
   const url = `${BACKEND_URL}${path}`;
 
-  // 5-second timeout to prevent indefinite hangs (reduced from 10)
+  // 10-second timeout to prevent UI from appearing frozen
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await fetch(url, {
@@ -32,7 +32,7 @@ export async function apiFetch(path: string, options?: RequestInit & { rawText?:
       // Return default values for specific endpoints to prevent crashes
       if (path === '/api/fx-rates') return { rates: { USD: 1 } };
       if (path === '/api/settings/currency-display') return { mode: 'usd' };
-      throw new Error(`Request timeout after 5s: ${path}`);
+      throw new Error(`Request timeout after 10s: ${path}`);
     }
     throw err;
   }
