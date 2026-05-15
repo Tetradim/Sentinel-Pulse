@@ -411,8 +411,10 @@ def main():
                 app, 
                 host="0.0.0.0", 
                 port=port, 
-                log_config=None
+                log_config=None,
             )
+        except Exception as e:
+            logger.error(f"Server error: {e}", exc_info=True)
         finally:
             stop_mongodb()
             logger.info("[Sentinel Pulse] Server stopped")
