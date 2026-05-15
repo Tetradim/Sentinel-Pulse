@@ -31,8 +31,8 @@ class VaultConfig(BaseModel):
 
 class EnvironmentConfig(BaseModel):
     """Environment configuration."""
-    environment: Environment = Environment.DEVELOPMENT
-    debug: bool = True
+    environment: Environment = Environment.PRODUCTION
+    debug: bool = False
     log_level: str = "INFO"
     
     # Database
@@ -107,8 +107,8 @@ def load_config() -> EnvironmentConfig:
         _config.redis_host = os.getenv("REDIS_HOST", "prod-redis.internal")
         _config.debug = False
         _config.log_level = "WARNING"
-        _config.features["paper_trading"] = False
-        _config.features["live_trading"] = True
+        _config.features["paper_trading"] = True
+        _config.features["live_trading"] = True  # Enable both for beta testing
     
     # Load from environment variables (highest priority)
     _config.db_host = os.getenv("DB_HOST", _config.db_host)
