@@ -1,0 +1,141 @@
+# Sentinel Edge Alert Rules for Prometheus
+# Place in your Prometheus rules directory
+
+groups:
+  - name: sentinel_edge
+    interval: 30s
+    rules:
+      # Volatility Surge - detect unusual volatility spikes
+      - alert: EdgeVolatilitySurge
+        expr: |
+          (sentinel_volatility_24h > sentinel_volatility_10d_avg * 2.5)
+          and (sentinel_volatility_24h > 0.5)
+        for: 1m
+        labels:
+          alertname: EdgeVolatilitySurge
+          severity: warning
+          team: sentinel
+        annotations:
+          summary: "Volatility surge detected on {{ $labels.symbol }}"
+          description: |
+            24h volatility ({{ $value }}) is 2.5x the 10-day average.
+            Consider pausing the ticker or widening the stop loss.
+
+      # ORB Bullish Breakout - Opening Range Breakout to upside
+      - alert: EdgeORBBreakoutBull
+        expr: |
+          (sentinel_orb_breakout == 1)
+          and (sentinel_orb_direction == 1)
+        for: 30s
+        labels:
+          alertname: EdgeORBBreakoutBull
+          severity: warning
+          team: sentinel
+        annotations:
+          summary: "ORB bullish breakout on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} broke out above the opening range.
+            Consider lowering buy offset to chase the breakout.
+
+      # ORB Bearish Breakout - Opening Range Breakout to downside  
+      - alert: EdgeORBBreakoutBear
+        expr: |
+          (sentinel_orb_breakout == 1)
+          and (sentinel_orb_direction == -1)
+        for: 30s
+        labels:
+          alertname: EdgeORBBreakoutBear
+          severity: warning
+          team: sentinel
+        annotations:
+          summary: "ORB bearish breakout on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} broke below the opening range.
+            Consider tightening the stop and raising sell target.
+
+      # RSI Overbought - RSI above 70
+      - alert: EdgeRSIOverbought
+        expr: sentinel_rsi > 70
+        for: 5m
+        labels:
+          alertname: EdgeRSIOverbought
+          severity: warning
+          team: sentinel
+        annotations:
+          summary: "RSI overbought on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} RSI is {{ $value }} (above 70).
+            Consider blocking new buys until price resets.
+
+      # RSI Oversold - RSI below 30
+      - alert: EdgeRSIOversold
+        expr: sentinel_rsi < 30
+        for: 5m
+        labels:
+          alertname: EdgeRSIOversold
+          severity: info
+          team: sentinel
+        annotations:
+          summary: "RSI oversold on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} RSI is {{ $value }} (below 30).
+            Potential buying opportunity.
+
+      # Head & Shoulders Pattern Detected
+      - alert: EdgePatternHS
+        expr: sentinel_pattern_hs == 1
+        for: 2m
+        labels:
+          alertname: EdgePatternHS
+          severity: warning
+          team: sentinel
+        annotations:
+          summary: "Head & Shoulders pattern on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} showing Head & Shoulders pattern.
+            Consider pausing the ticker to avoid reversal.
+
+      # Double Top/Bottom Pattern
+      - alert: EdgePatternDTB
+        expr: sentinel_pattern_dtb == 1
+        for: 2m
+        labels:
+          alertname: EdgePatternDTB
+          severity: info
+          team: sentinel
+        annotations:
+          summary: "Double Top/Bottom on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} showing Double Top/Bottom pattern.
+            Confirm breakout direction before acting.
+
+      # Price Gap - Significant overnight gap
+      - alert: EdgePriceGap
+        expr: |
+          abs(sentinel_gap_percent) > 3
+        for: 1m
+        labels:
+          alertname: EdgePriceGap
+          severity: info
+          team: sentinel
+        annotations:
+          summary: "Price gap on {{ $labels.symbol }}"
+          description: |
+            {{ $labels.symbol }} gapped {{ $value }}% overnight.
+            Review before executing orders.
+
+      # Unusual Volume - Volume spike
+      - alert: EdgeVolumeSpike
+        expr: |
+          (sentinel_volume > sentinel_volume_20d_avg * 5)
+          and (sentinel_volume_20d_avg > 10000)
+        for: 1m
+        labels:
+          alertname: EdgeVolumeSpike
+          severity: info
+          team: sentinel
+        annotations:
+          summary: "Volume spike on {{ $labels.symbol }}"
+          description: |
+            Volume is 5x the 20-day average.
+            May indicate news-driven move.

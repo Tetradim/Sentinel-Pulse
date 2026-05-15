@@ -421,6 +421,7 @@ from routes.auth import router as auth_router
 from routes.orders import router as orders_router
 from routes.reconciliation import router as reconciliation_router
 from routes.audit import router as audit_router
+from alert_handler import router as alert_router
 from routes.ops import router as ops_router
 from routes.analytics import router as analytics_router
 from routes.slo import router as slo_router
@@ -444,6 +445,7 @@ api.include_router(auth_router)
 api.include_router(orders_router)
 api.include_router(reconciliation_router)
 api.include_router(audit_router)
+api.include_router(alert_router)
 api.include_router(ops_router)
 api.include_router(analytics_router)
 api.include_router(slo_router)

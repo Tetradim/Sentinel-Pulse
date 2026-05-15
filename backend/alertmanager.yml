@@ -1,0 +1,44 @@
+# Alertmanager configuration for Sentinel Pulse
+# Place in your Alertmanager config directory (e.g., /etc/alertmanager/alertmanager.yml)
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'symbol']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'pulse-api'
+  routes:
+    # Route high-severity alerts to Pulse immediately
+    - match:
+        severity: critical
+      receiver: 'pulse-api'
+      continue: true
+    # Route Edge alerts to Pulse
+    - match:
+        alertname: 'Edge.*'
+      receiver: 'pulse-api'
+
+receivers:
+  - name: 'pulse-api'
+    webhook_configs:
+      - url: 'http://localhost:8002/api/alerts/webhook'
+        send_resolved: true
+        # Optional: auth header if you need it
+        # http_config:
+        #   authorization:
+        #     type: Bearer
+        #     credentials: 'your-api-key'
+
+  - name: 'null'
+    webhook_configs: []
+
+inhibit_rules:
+  # Inhibit lower-priority alerts when a critical alert is firing
+  - equal: ['alertname', 'symbol', 'severity']
+    source_match:
+      severity: 'critical'
+    target_match_re:
+      severity: 'warning|info'
