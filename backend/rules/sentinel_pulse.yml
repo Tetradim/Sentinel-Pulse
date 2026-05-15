@@ -1,0 +1,119 @@
+# Sentinel Pulse Alert Rules for Prometheus
+# Alerts for trading engine health and risk management
+
+groups:
+  - name: sentinel_pulse_engine
+    interval: 30s
+    rules:
+      # Engine is down
+      - alert: PulseEngineDown
+        expr: sentinel_pulse_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: PulseEngineDown
+        annotations:
+          summary: "Sentinel Pulse engine is not running"
+          description: "The trading engine has stopped for {{ $value | humanizeDuration }}"
+
+      # No Market Hours (expected during closed hours)
+      - alert: PulseMarketClosed
+        expr: sentinel_pulse_market_open == 0
+        for: 5m
+        labels:
+          severity: info
+          alertname: PulseMarketClosed
+        annotations:
+          summary: "Market is closed"
+          description: "Trading halted outside market hours (9:30 AM - 4:00 PM ET)"
+
+      # Engine Paused
+      - alert: PulseEnginePaused
+        expr: sentinel_pulse_paused == 1
+        for: 5m
+        labels:
+          severity: warning
+          alertname: PulseEnginePaused
+        annotations:
+          summary: "Trading engine is paused"
+          description: "The engine has been paused for {{ $value | humanizeDuration }}"
+
+      # Too many tickers enabled
+      - alert: PulseTooManyTickers
+        expr: sentinel_pulse_tickers_enabled > 20
+        for: 5m
+        labels:
+          severity: warning
+          alertname: PulseTooManyTickers
+        annotations:
+          summary: "Too many tickers enabled: {{ $value }}"
+          description: "Having more than 20 tickers may dilute returns"
+
+      # Low available capital
+      - alert: PulseLowCapital
+        expr: sentinel_pulse_available_usd < 1000
+        for: 5m
+        labels:
+          severity: warning
+          alertname: PulseLowCapital
+        annotations:
+          summary: "Low available capital: ${{ $value }}"
+          description: "Less than $1000 available for new positions"
+
+      # High drawdown
+      - alert: PulseHighDrawdown
+        expr: (sentinel_pulse_total_pnl_usd < -500) and (sentinel_pulse_account_balance_usd > 0)
+        for: 10m
+        labels:
+          severity: critical
+          alertname: PulseHighDrawdown
+        annotations:
+          summary: "Portfolio in drawdown: ${{ $value }}"
+          description: "Total P&L is down ${{ $value }}. Consider pausing trading."
+
+      # High trade volume
+      - alert: PulseTradeSpike
+        expr: increase(sentinel_pulse_trades_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+          alertname: PulseTradeSpike
+        annotations:
+          summary: "Trade spike detected"
+          description: "{{ $value }} trades in last 5 minutes"
+
+  - name: sentinel_pulse_risk
+    interval: 30s
+    rules:
+      # Position concentration
+      - alert: PulseHighConcentration
+        expr: max(sentinel_pulse_position_concentration) > 0.4
+        for: 5m
+        labels:
+          severity: warning
+          alertname: PulseHighConcentration
+        annotations:
+          summary: "High position concentration on {{ $labels.symbol }}"
+          description: "{{ $labels.symbol }} is {{ $value | humanizePercentage }} of portfolio"
+
+      # Daily loss limit
+      - alert: PulseDailyLossLimit
+        expr: sentinel_pulse_daily_loss_usd > sentinel_pulse_account_balance_usd * 0.05
+        for: 1m
+        labels:
+          severity: critical
+          alertname: PulseDailyLossLimit
+        annotations:
+          summary: "Daily loss limit triggered"
+          description: "Loss is {{ $value | humanizePercentage }} of account. Pausing trading."
+
+      # Circuit breaker open
+      - alert: PulseCircuitBreaker
+        expr: sentinel_pulse_circuit_breaker == 1
+        for: 30s
+        labels:
+          severity: critical
+          alertname: PulseCircuitBreaker
+        annotations:
+          summary: "Circuit breaker opened for {{ $labels.broker }}"
+          description: "Broker {{ $labels.broker }} is blocked due to failures"

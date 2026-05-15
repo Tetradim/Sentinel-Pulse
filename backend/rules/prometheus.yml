@@ -1,0 +1,63 @@
+# Prometheus configuration for Sentinel Pulse + Edge monitoring
+# This config scrapes both Pulse and Edge metrics, evaluates alert rules, 
+# and forwards firing alerts to Alertmanager → Pulse webhook
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'sentinel-pulse'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'  # Alertmanager
+
+# Rule files to evaluate
+rule_files:
+  - 'rules/sentinel_edge.yml'
+  - 'rules/sentinel_pulse.yml'
+
+# Scrape configs - Pulse and Edge
+scrape_configs:
+  # Sentinel Pulse (main trading engine)
+  - job_name: 'sentinel-pulse'
+    static_configs:
+      - targets: ['localhost:8002']
+        labels:
+          component: 'engine'
+          app: 'sentinel-pulse'
+    metrics_path: '/api/health/metrics'
+    scrape_interval: 30s
+
+  # Sentinel Pulse Edge API (signals)
+  - job_name: 'sentinel-edge'
+    static_configs:
+      - targets: ['localhost:8002']
+        labels:
+          component: 'edge-api'
+          app: 'sentinel-edge'
+    metrics_path: '/api/edge/metrics'
+    scrape_interval: 15s
+    # Scrape more frequently during market hours
+    scrape_limits:
+      max_samples_per_query: 5000
+
+  # Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          component: 'system'
+    scrape_interval: 60s
+
+  # MongoDB exporter
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['localhost:9216']
+        labels:
+          component: 'database'
+    scrape_interval: 60s

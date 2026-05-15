@@ -3,8 +3,10 @@
 Edge calls these endpoints to:
 - POST /api/tickers/{symbol}/decision - Buy/sell/stop decisions
 - POST /api/tickers/{symbol}/trailing - Enable trailing stop
+- POST /api/signals - Receive RSI/ORB/volatility signals from Edge
 - GET /api/positions/{symbol} - Get position
 - GET /api/tickers - Get all tickers
+- GET /api/metrics - Prometheus metrics (includes Edge signals)
 
 This matches what sentinel-edge's pulse_client.py expects.
 """
@@ -12,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Header
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 import deps
@@ -24,21 +27,43 @@ from shared import (
 
 router = APIRouter()
 
+# In-memory signal cache (reset on restart)
+# Key = symbol, Value = latest signal dict
+_signal_cache: dict = {}
+
 
 # --- Signal/Decision models (for Edge compatibility) ---
 class SignalRequest(BaseModel):
-    """Signal request from Edge."""
-    action: str  # buy, sell, stop
+    """Signal request from Edge.
+    
+    Can include:
+    - action: buy/sell/stop (legacy decision)
+    - ORB data: orb_high, orb_low, orb_breakout
+    - RSI: rsi
+    - Patterns: pattern (hs, dtb)
+    - Direction: signal_type (bullish/bearish/neutral)
+    """
+    action: str = "signal"  # Default to signal mode
     confidence: float = 1.0
     bracket: Optional[dict] = None
     decision: str = "hold"  # Legacy field
+    
+    # Signal fields
+    rsi: Optional[float] = None
+    signal_type: Optional[str] = None  # bullish, bearish, neutral
+    orb_high: Optional[float] = None
+    orb_low: Optional[float] = None
+    pattern: Optional[str] = None  # hs, dtb, etc
+    volatility: Optional[float] = None
+    volume: Optional[float] = None
 
 
 class SignalResponse(BaseModel):
     """Signal response to Edge."""
     status: str
     symbol: str
-    decision: str
+    action: str = "signal"
+    decision: str = "hold"
     confidence: float = 1.0
     message: str = ""
 
@@ -251,11 +276,48 @@ async def enable_trailing(symbol: str, body: TrailingRequest):
 
 @router.post("/signals/{symbol}")
 async def submit_signal(symbol: str, body: SignalRequest) -> SignalResponse:
-    """Legacy endpoint - redirects to decision endpoint."""
-    # Convert signal request to decision request
-    decision_map = {"buy": "buy", "sell": "sell", "stop": "stop"}
-    body.decision = decision_map.get(body.action.lower(), "hold")
-    return await post_decision(symbol, body)
+    """Receive signals from Edge and update metrics cache.
+    
+    Edge sends signals here, we:
+    1. Process action if provided (legacy buy/sell/stop)
+    2. Update signal cache for Prometheus metrics
+    
+    Edge calls: POST /api/signals/{symbol} with JSON:
+    {
+        "action": "signal",
+        "rsi": 65,
+        "signal_type": "bullish",
+        "orb_high": 150.25,
+        "orb_low": 149.50,
+        "pattern": "hs",
+        "volatility": 0.25,
+        "volume": 1500000
+    }
+    """
+    sym = symbol.upper()
+    
+    # Legacy action handling - convert to decision
+    if body.action.lower() not in ("signal", "hold"):
+        decision_map = {"buy": "buy", "sell": "sell", "stop": "stop"}
+        body.decision = decision_map.get(body.action.lower(), "hold")
+        return await post_decision(symbol, body)
+    
+    # Update signal cache for Prometheus metrics
+    sig_data = {
+        "rsi": body.rsi or 0,
+        "direction": body.signal_type or "neutral",
+        "orb_breakout": body.confidence >= 0.8 if body.confidence else False,
+        "orb_direction": 1 if body.signal_type == "bullish" else (-1 if body.signal_type == "bearish" else 0),
+        "orb_high": body.orb_high or 0,
+        "orb_low": body.orb_low or 0,
+        "volatility_24h": body.volatility or 0,
+        "pattern_hs": body.pattern == "hs",
+        "pattern_dtb": body.pattern == "dtb",
+        "volume": body.volume or 0,
+    }
+    _signal_cache[sym] = sig_data
+    
+    return SignalResponse(status="ok", symbol=sym, action="signal", message="signal cached")
 
 
 @router.get("/positions/{symbol}")
@@ -491,3 +553,78 @@ async def evaluate_signal(body: SignalEvalRequest):
         volume_zscore=volume_zscore,
         observation_applied=observation is not None,
     )
+
+
+# --- Prometheus metrics for Edge integration ---
+@router.get("/metrics", response_class=PlainTextResponse)
+async def edge_prometheus_metrics():
+    """Expose Edge signals as Prometheus metrics.
+    
+    Prometheus scrapes this endpoint to get:
+    - sentinel_rsi{...}
+    - sentinel_orb_*
+    - sentinel_volatility_*
+    - sentinel_pattern_*
+    
+    These trigger alerts in sentinel_edge.yml rules.
+    """
+    import time
+    
+    lines = []
+    timestamp = int(time.time())
+    
+    # RSI metrics
+    lines.append("# HELP sentinel_rsi Relative Strength Index (0-100)")
+    lines.append("# TYPE sentinel_rsi gauge")
+    for sym, sig in _signal_cache.items():
+        rsi = sig.get("rsi", 0)
+        direction = sig.get("direction", "neutral")
+        lines.append(f'sentinel_rsi{{symbol="{sym}",direction="{direction}"}} {rsi}')
+    
+    # ORB metrics
+    lines.append("# HELP sentinel_orb_breakout Opening Range Breakout indicator")
+    lines.append("# TYPE sentinel_orb_breakout gauge")
+    for sym, sig in _signal_cache.items():
+        breakout = 1 if sig.get("orb_breakout", False) else 0
+        orb_direction = sig.get("orb_direction", 0)
+        orb_high = sig.get("orb_high", 0)
+        orb_low = sig.get("orb_low", 0)
+        lines.append(f'sentinel_orb_breakout{{symbol="{sym}",direction="{orb_direction}"}} {breakout}')
+        if orb_high or orb_low:
+            lines.append(f'sentinel_orb_high{{symbol="{sym}"}} {orb_high}')
+            lines.append(f'sentinel_orb_low{{symbol="{sym}"}} {orb_low}')
+    
+    # Volatility metrics
+    lines.append("# HELP sentinel_volatility_24h 24-hour volatility")
+    lines.append("# TYPE sentinel_volatility_24h gauge")
+    lines.append("# HELP sentinel_volatility_10d_avg 10-day average volatility")
+    lines.append("# TYPE sentinel_volatility_10d_avg gauge")
+    for sym, sig in _signal_cache.items():
+        vol_24h = sig.get("volatility_24h", 0)
+        vol_10d = sig.get("volatility_10d_avg", 0)
+        lines.append(f'sentinel_volatility_24h{{symbol="{sym}"}} {vol_24h}')
+        lines.append(f'sentinel_volatility_10d_avg{{symbol="{sym}"}} {vol_10d}')
+    
+    # Pattern metrics
+    lines.append("# HELP sentinel_pattern_head_shoulders Head & Shoulders pattern")
+    lines.append("# TYPE sentinel_pattern_head_shoulders gauge")
+    lines.append("# HELP sentinel_pattern_double_top_bottom Double Top/Bottom pattern")
+    lines.append("# TYPE sentinel_pattern_double_top_bottom gauge")
+    for sym, sig in _signal_cache.items():
+        hs = 1 if sig.get("pattern_hs", False) else 0
+        dtb = 1 if sig.get("pattern_dtb", False) else 0
+        lines.append(f'sentinel_pattern_hs{{symbol="{sym}"}} {hs}')
+        lines.append(f'sentinel_pattern_dtb{{symbol="{sym}"}} {dtb}')
+    
+    # Volume metrics
+    lines.append("# HELP sentinel_volume Current volume")
+    lines.append("# TYPE sentinel_volume gauge")
+    lines.append("# HELP sentinel_volume_20d_avg 20-day average volume")
+    lines.append("# TYPE sentinel_volume_20d_avg gauge")
+    for sym, sig in _signal_cache.items():
+        vol = sig.get("volume", 0)
+        vol_20d = sig.get("volume_20d_avg", 0)
+        lines.append(f'sentinel_volume{{symbol="{sym}"}} {vol}')
+        lines.append(f'sentinel_volume_20d_avg{{symbol="{sym}"}} {vol_20d}')
+    
+    return "\n".join(lines)
