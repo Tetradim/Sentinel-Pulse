@@ -1,7 +1,7 @@
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import { useStore, TickerConfig } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { X, TrendingDown, TrendingUp, ShieldAlert, BarChart3, Activity, Zap, Settings2, Layers, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, TrendingDown, TrendingUp, ShieldAlert, BarChart3, Activity, Zap, Settings2, Layers, RefreshCw, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -17,7 +17,11 @@ import {
   OrderTypeToggle,
 } from './ticker-card/ConfigWidgets';
 
+/* Strategy config section */
+import { StrategyConfigSection } from './ticker-card/StrategyConfigSection';
+
 const CONFIG_TABS = [
+  { id: 'strategy', label: 'Strategy', icon: Brain },
   { id: 'rules', label: 'Rules', icon: TrendingDown },
   { id: 'partial', label: 'Partial Fills', icon: Layers },
   { id: 'risk', label: 'Risk', icon: ShieldAlert },
@@ -141,6 +145,13 @@ export const ConfigModal = memo(function ConfigModal({ ticker, onClose }: Props)
                   Re-enable
                 </button>
               </div>
+            )}
+
+            {activeTab === 'strategy' && (
+              <StrategyConfigSection
+                ticker={ticker}
+                onFieldChange={handleFieldChange}
+              />
             )}
 
             {activeTab === 'rules' && (

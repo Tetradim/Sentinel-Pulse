@@ -55,6 +55,21 @@ export interface TickerConfig {
   strategy_config: Record<string, number | boolean | string>;
 }
 
+/* Strategy metadata + JSON schema from /api/strategies/registry */
+export interface StrategyInfo {
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  tags: string[];
+  risk_level: string;
+  requires_history_bars: number;
+  supported_markets: string[];
+  is_signal_strategy: boolean;
+  default_params: Record<string, number | boolean | string>;
+  config_schema: Record<string, any>;
+}
+
 export interface TradeLog {
   id: string;
   symbol: string;
