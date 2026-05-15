@@ -8,6 +8,18 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 
 ## Recent Updates
 
+### v1.0.3 - Strategy Configuration UI
+
+- **Strategy Tab in ConfigModal**: New "Strategy" tab (first tab) in the ticker configuration modal. Click any ticker → Config → Strategy.
+- **Per-Ticker Strategies**: Each ticker can have a unique strategy with different parameters. AAPL can use RSI while TSLA uses MACD.
+- **Dynamic Form Generation**: Schema-driven UI auto-generates form fields from the strategy's Pydantic config model:
+  - `boolean` → Toggle switch
+  - `number`/`integer` → Number input with min/max
+  - `string` (enum) → Radio button group
+  - `string` → Text input
+  - `object` → Nested fields (recursive)
+- **Strategy Picker Dropdown**: Select from all registered strategies - RSI, MACD, Bollinger, SMA Crossover, Pattern Scanner, etc.
+
 ### v1.0.2 - Multi-Broker UI Improvements
 
 - **Brokers Tab in ConfigModal**: Added a Brokers tab to the ticker configuration modal. Click any ticker → Config → Brokers to assign brokers directly without navigating to Settings.
@@ -30,17 +42,18 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 2. [Quick Start](#quick-start)
 3. [Feature Overview](#feature-overview)
 4. [Pluggable Strategy System](#pluggable-strategy-system)
-5. [Edge Integration](#edge-integration)
-6. [MACD-V Strategy](#macd-v-strategy)
-7. [File Map — Backend](#file-map--backend)
-8. [File Map — Frontend](#file-map--frontend)
-9. [API Reference](#api-reference)
-10. [Database Schema](#database-schema)
-11. [Environment Variables](#environment-variables)
-12. [Broker Catalogue](#broker-catalogue)
-13. [International Markets](#international-markets)
-14. [Resilience Architecture](#resilience-architecture)
-15. [Roadmap: Planned Upgrades & Enhancements](#roadmap-planned-upgrades--enhancements)
+5. [Strategy Configuration UI](#strategy-configuration-ui)
+6. [Edge Integration](#edge-integration)
+7. [MACD-V Strategy](#macd-v-strategy)
+8. [File Map — Backend](#file-map--backend)
+9. [File Map — Frontend](#file-map--frontend)
+10. [API Reference](#api-reference)
+11. [Database Schema](#database-schema)
+12. [Environment Variables](#environment-variables)
+13. [Broker Catalogue](#broker-catalogue)
+14. [International Markets](#international-markets)
+15. [Resilience Architecture](#resilience-architecture)
+16. [Roadmap: Planned Upgrades & Enhancements](#roadmap-planned-upgrades--enhancements)
 
 ---
 
@@ -425,6 +438,77 @@ If your file has a Python syntax error, the loader catches and logs it without c
 ✅  Returns:          Signal(...) or None  — never raises unhandled exceptions
 ✅  Params (optional): subclass StrategyConfigModel, set params_model + default_params
 ✅  No __init__ needed unless you want custom setup (use on_load() instead)
+```
+
+---
+
+## Strategy Configuration UI
+
+Sentinel Pulse includes a **schema-driven form generator** in the ConfigModal that auto-creates UI inputs based on your strategy's Pydantic config model.
+
+### Accessing the Strategy Tab
+
+1. Click any ticker card → opens ConfigModal
+2. Select **Strategy** tab (first tab)
+3. Pick a strategy from the dropdown
+
+### Per-Ticker Strategies
+
+Each ticker can have a unique strategy with different parameters:
+
+| Ticker | Strategy | Parameters |
+|--------|----------|------------|
+| **AAPL** | RSI | rsi_period: 14, rsi_oversold: 30 |
+| **TSLA** | MACD | macd_fast: 12, macd_slow: 26 |
+| **NVDA** | Bollinger | bb_period: 20, bb_std: 2.0 |
+| **MSFT** | (manual) | none |
+
+### Form Field Mapping
+
+| Schema Type | UI Control |
+|------------|-----------|
+| `boolean` | Toggle switch |
+| `number`/`integer` | Number input with min/max validation |
+| `string` (with enum) | Radio button group |
+| `string` | Text input |
+| `object` | Nested fields (recursive render) |
+
+### Example: RSI Parameters
+
+The RSI strategy defines:
+
+```python
+class RSIParams(StrategyConfigModel):
+    rsi_period: int = Field(14, ge=5, le=50, title="RSI Period")
+    rsi_oversold: float = Field(30.0, ge=10, le=50, title="Oversold Threshold")
+    rsi_overbought: float = Field(70.0, ge=50, le=90, title="Overbought Threshold")
+    min_confidence: float = Field(0.70, ge=0.50, le=1.0, title="Min Confidence")
+    min_bars: int = Field(30, ge=20, le=500, title="Min History Bars")
+```
+
+This auto-generates form inputs with:
+- RSI Period: integer (5-50)
+- Oversold Threshold: number (10-50)
+- Overbought Threshold: number (50-90)
+- Min Confidence: number (0.5-1.0)
+- Min History Bars: integer (20-500)
+
+### Data Persistence
+
+Strategy choices and parameters are stored in MongoDB per ticker:
+
+```json
+// Ticker document
+{
+  "symbol": "AAPL",
+  "strategy": "RSI",
+  "strategy_config": {
+    "rsi_period": 14,
+    "rsi_oversold": 30,
+    "rsi_overbought": 70,
+    "min_confidence": 0.70
+  }
+}
 ```
 
 ---
