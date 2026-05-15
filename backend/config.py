@@ -69,12 +69,12 @@ _vault_config: Optional[VaultConfig] = None
 
 def get_environment() -> Environment:
     """Get current environment from ENV."""
-    env = os.getenv("ENVIRONMENT", "development").lower()
+    env = os.getenv("ENVIRONMENT", "production").lower()
     try:
         return Environment(env)
     except ValueError:
-        logger.warning(f"Invalid ENVIRONMENT: {env}, defaulting to development")
-        return Environment.DEVELOPMENT
+        logger.warning(f"Invalid ENVIRONMENT: {env}, defaulting to production")
+        return Environment.PRODUCTION
 
 
 def load_config() -> EnvironmentConfig:

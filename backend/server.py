@@ -77,8 +77,6 @@ if getattr(sys, 'frozen', False):
 else:
     load_dotenv()
 
-logger.info("ENV loaded - DEMO_MODE: %s", os.environ.get("DEMO_MODE", ""))
-
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 
