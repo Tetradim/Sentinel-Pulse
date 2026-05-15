@@ -152,6 +152,13 @@ interface BotState {
   paperAfterHours: boolean;
   setLiveDuringMarketHours: (v: boolean) => void;
   setPaperAfterHours: (v: boolean) => void;
+
+  // Global daily drawdown limit (portfolio-level circuit breaker)
+  globalDailyDrawdownEnabled: boolean;
+  globalDailyDrawdownLimit: number; // can be cash (e.g. $3000) or percent (e.g. 3%)
+  globalDailyDrawdownType: 'percent' | 'cash';
+  setGlobalDailyDrawdown: (enabled: boolean, limit: number, type: 'percent' | 'cash') => void;
+
   telegramToken: string;
   telegramChatIds: string[];
   setTelegramConfig: (token: string, chatIds: string[]) => void;
@@ -274,6 +281,14 @@ export const useStore = create<BotState>((set) => ({
   paperAfterHours: false,
   setLiveDuringMarketHours: (liveDuringMarketHours) => set({ liveDuringMarketHours }),
   setPaperAfterHours: (paperAfterHours) => set({ paperAfterHours }),
+  
+  // Global daily drawdown limit (portfolio-level circuit breaker)
+  globalDailyDrawdownEnabled: false,
+  globalDailyDrawdownLimit: 3, // default 3%
+  globalDailyDrawdownType: 'percent',
+  setGlobalDailyDrawdown: (globalDailyDrawdownEnabled, globalDailyDrawdownLimit, globalDailyDrawdownType) => 
+    set({ globalDailyDrawdownEnabled, globalDailyDrawdownLimit, globalDailyDrawdownType }),
+
   telegramToken: '',
   telegramChatIds: [],
   setTelegramConfig: (telegramToken, telegramChatIds) => set({ telegramToken, telegramChatIds }),

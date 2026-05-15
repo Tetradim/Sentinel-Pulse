@@ -96,10 +96,26 @@ export function BrokersTab() {
   const [connectedInfo, setConnectedInfo] = useState<Record<string, { buyingPower: number; balance: number }>>({});
 
   useEffect(() => {
-    apiFetch('/api/brokers')
-      .then((data) => setBrokers(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    async function loadBrokers() {
+      try {
+        const data = await apiFetch('/api/brokers');
+        setBrokers(data);
+      } catch (err) {
+        console.warn('Failed to load brokers, retrying...');
+        // Retry once after 2s in case backend was starting up
+        setTimeout(async () => {
+          try {
+            const data = await apiFetch('/api/brokers');
+            setBrokers(data);
+          } catch {
+            console.error('Broker load failed on retry');
+          }
+        }, 2000);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBrokers();
   }, []);
 
   const handleTestResult = (brokerId: string, buyingPower: number, balance: number) => {
