@@ -4,13 +4,16 @@ title Sentinel Pulse v1.0.0 Launcher
 setlocal
 
 :: Config
-set PROJECT_DIR=%~dp0
+set "PROJECT_DIR=%~dp0"
+set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 set PORT=8002
 set MONGODB_PORT=27017
 set DESKTOP=%USERPROFILE%\Desktop
 set LOG_FILE=%DESKTOP%\sentinel_pulse.log
 
+echo DEBUG: PROJECT_DIR=%PROJECT_DIR%
 cd /d "%PROJECT_DIR%"
+echo DEBUG: CWD=%CD%
 
 :: ---------------------------------------------------
 :: Run as Administrator
@@ -22,6 +25,9 @@ if %errorlevel% neq 0 (
     powershell -Command "Start-Process cmd.exe -ArgumentList '/c cd /d \"%PROJECT_DIR%\" && \"%~f0\"' -Verb RunAs"
     exit /b 0
 )
+
+:: Ensure we're in the right directory after any re-launch
+cd /d "%PROJECT_DIR%"
 
 echo.
 echo ==================================================
@@ -113,17 +119,21 @@ echo [4/5] Starting Sentinel Pulse Server...
 echo   Starting Sentinel Pulse... >> %LOG_FILE%
 
 :: Start the server with logging
+echo DEBUG: Checking server.py: backend\server.py exists=%ERRORLEVEL%
 if exist "backend\server.py" (
+    echo   Server: backend\server.py found
+    echo   Server: backend\server.py found >> %LOG_FILE%
     start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%backend" && python server.py >> ..\\logs\\server.log 2>&1"
     echo   Server starting...
-    echo   Server: starting python >> %LOG_FILE%
 ) else if exist "backend\SentinelPulse.exe" (
+    echo   Server: SentinelPulse.exe found
+    echo   Server: SentinelPulse.exe found >> %LOG_FILE%
     start "" "%PROJECT_DIR%backend\SentinelPulse.exe"
     echo   Running bundled exe...
-    echo   Server: SentinelPulse.exe >> %LOG_FILE%
 ) else (
     echo   ERROR: Server not found
-    echo   ERROR: Server not found >> %LOG_FILE%
+    echo   ERROR: Server not found at %PROJECT_DIR%backend >> %LOG_FILE%
+    dir "%PROJECT_DIR%backend" >> %LOG_FILE%
     echo   Run build first to create backend\SentinelPulse.exe
     pause
     exit /b 1
