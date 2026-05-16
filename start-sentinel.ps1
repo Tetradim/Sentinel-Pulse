@@ -43,16 +43,16 @@ if (-not $SkipMongo) {
     if ($mongoConn) {
         Write-Host "  MongoDB is already running" -ForegroundColor Green
     } else {
-        # Try to start MongoDB - check multiple locations
+        # Try to start MongoDB - check installed versions first
         $mongodPaths = @(
-            "mongod",  # PATH - try first via Get-Command
             "$env:ProgramFiles\MongoDB\Server\8.2\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\8.0\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\7.0\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\6.0\bin\mongod.exe",
             "$env:ProgramFiles(x86)\MongoDB\Server\8.2\bin\mongod.exe",
             "$ScriptDir\mongod.exe",
-            "$ScriptDir\..\mongodb\mongod.exe"
+            "$ScriptDir\..\mongodb\mongod.exe",
+            "mongod"  # PATH fallback
         )
         
         $mongod = $null
@@ -75,13 +75,19 @@ if (-not $SkipMongo) {
         
         if ($mongod) {
             Write-Host "  Starting MongoDB from: $mongod"
-            $dbPath = "$ScriptDir\data\db"
-            if (-not (Test-Path $dbPath)) { New-Item -ItemType Directory -Path $dbPath -Force | Out-Null }
+            # Use standard MongoDB data path
+            $dbPath = "C:\data\db"
+            if (-not (Test-Path $dbPath)) { 
+                New-Item -ItemType Directory -Path $dbPath -Force | Out-Null 
+                Write-Host "  Created data directory: $dbPath"
+            }
             Start-Process -FilePath $mongod -ArgumentList "--dbpath $dbPath" -WindowStyle Hidden
             Start-Sleep -Seconds 3
             Write-Host "  MongoDB started" -ForegroundColor Green
         } else {
             Write-Host "  ERROR: MongoDB not found - Sentinel Pulse requires MongoDB" -ForegroundColor Red
+            Write-Host "  Please install MongoDB or add to PATH:" -ForegroundColor Yellow
+            Write-Host "    https://www.mongodb.com/try/download/community" -ForegroundColor Cyan
             Write-ErrorLog "ERROR: MongoDB not found"
             exit 1
         }
