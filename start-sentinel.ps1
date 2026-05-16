@@ -45,7 +45,7 @@ if (-not $SkipMongo) {
     } else {
         # Try to start MongoDB - check multiple locations
         $mongodPaths = @(
-            "mongod",  # PATH
+            "mongod",  # PATH - try first via Get-Command
             "$env:ProgramFiles\MongoDB\Server\8.2\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\8.0\bin\mongod.exe",
             "$env:ProgramFiles\MongoDB\Server\7.0\bin\mongod.exe",
@@ -63,9 +63,14 @@ if (-not $SkipMongo) {
             }
         }
         
-        # Try which as fallback
+        # Try where.exe as fallback to find in PATH
         if (-not $mongod) {
-            $mongod = Get-Command mongod -ErrorAction SilentlyContinue | Select-Object -First 1
+            try {
+                $mongodCmd = where.exe mongod 2>$null
+                if ($mongodCmd) {
+                    $mongod = ($mongodCmd -split "`n")[0].Trim()
+                }
+            } catch {}
         }
         
         if ($mongod) {
