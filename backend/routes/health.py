@@ -136,10 +136,6 @@ async def prometheus_metrics():
     lines.append("# TYPE sentinel_pulse_running gauge")
     lines.append(f"sentinel_pulse_running {1 if deps.engine.running else 0}")
 
-    lines.append("# HELP sentinel_pulse_demo_mode Whether running in demo mode (no MongoDB).")
-    lines.append("# TYPE sentinel_pulse_demo_mode gauge")
-    lines.append(f"sentinel_pulse_demo_mode {1 if deps.DEMO_MODE else 0}")
-
     lines.append("# HELP sentinel_pulse_simulate_24_7 Whether in paper/simulation mode.")
     lines.append("# TYPE sentinel_pulse_simulate_24_7 gauge")
     lines.append(f"sentinel_pulse_simulate_24_7 {1 if deps.engine.simulate_24_7 else 0}")

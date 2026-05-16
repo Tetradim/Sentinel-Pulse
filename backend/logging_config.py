@@ -5,12 +5,14 @@ Adds:
 - Structured JSON logging
 - Error context enrichment
 - Colored console output in dev
+- File logging with centralized setup
 """
 import json
 import logging
 import sys
 import traceback
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 from contextvars import ContextVar
 
@@ -99,15 +101,24 @@ def setup_logging(
     level: str = 'INFO',
     json_format: bool = False,
     include_correlation_ids: bool = True,
+    log_file: str = 'sentinel_pulse.log',
 ) -> None:
-    """Setup structured logging.
+    """Setup structured logging with file and console output.
     
     Args:
         level: Log level (DEBUG, INFO, WARNING, ERROR)
         json_format: Use JSON output (for production)
         include_correlation_ids: Enable correlation ID tracking
+        log_file: Path to log file
     """
+    import os
     log_level = getattr(logging, level.upper(), logging.INFO)
+    
+    # Handle frozen/pyinstaller exe paths
+    log_path = Path(log_file)
+    if getattr(sys, 'frozen', False):
+        # Running as packaged exe - log to CWD where exe was launched from
+        log_path = Path.cwd() / log_path.name
     
     # Root logger
     root = logging.getLogger()
@@ -116,6 +127,20 @@ def setup_logging(
     # Remove existing handlers
     for handler in root.handlers[:]:
         root.removeHandler(handler)
+    
+    # File handler with UTF-8 encoding
+    try:
+        file_handler = logging.FileHandler(log_path, encoding='utf-8')
+        file_handler.setLevel(log_level)
+        if json_format:
+            file_handler.setFormatter(StructuredLogFormatter())
+        else:
+            file_handler.setFormatter(
+                logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s')
+            )
+        root.addHandler(file_handler)
+    except Exception as e:
+        pass  # Fallback to console only
     
     # Console handler
     console = logging.StreamHandler(sys.stdout)

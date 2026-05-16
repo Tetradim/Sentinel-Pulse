@@ -13,46 +13,28 @@ This is the slim orchestrator that wires together all modules:
 import asyncio
 import os
 import sys
-import threading
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-# Simple file logger for debugging
-def get_log_path():
-    if getattr(sys, 'frozen', False):
-        return Path(sys._MEIPASS) / 'sentinel_pulse.log'
-    return Path(__file__).parent / 'sentinel_pulse.log'
+# Use centralized logging from logging_config.py
+from logging_config import setup_logging
 
-# Configure logging with UTF-8 encoding for console output
-def _get_stream_handler():
-    stream = sys.stdout if sys.stdout is not None else sys.stderr
-    if stream is None:
-        # Frozen --noconsole exe: no console attached
-        return logging.NullHandler()
-    try:
-        stream.reconfigure(errors='replace')
-    except Exception:
-        pass
-    handler = logging.StreamHandler(stream)
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
-    return handler
-
-_log_handlers = [
-    logging.FileHandler(str(get_log_path()), encoding="utf-8-sig"),
-    _get_stream_handler(),
-]
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-    handlers=_log_handlers)
+# Configure logging early - before any imports that might log
+_log_file = getattr(sys, 'frozen', False) and 'sentinel_pulse.log' or 'logs/sentinel_pulse.log'
+setup_logging(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    json_format=os.getenv("LOG_JSON", "false").lower() == "true",
+    log_file=os.getenv("LOG_FILE", _log_file),
+)
 logger = logging.getLogger("SentinelPulse")
 
-# Log startup
-logger.info("=" * 50)
-logger.info("Sentinel Pulse starting - PID: %s", os.getpid())
-logger.info("Python: %s", sys.version.split()[0])
-logger.info("Frozen: %s", getattr(sys, 'frozen', False))
+# Log detailed startup info
+logger.info("=" * 80)
+logger.info("🚀 Sentinel Pulse STARTING UP")
+logger.info(f"PID: {os.getpid()} | Frozen: {getattr(sys, 'frozen', False)} | Python: {sys.version.split()[0]}")
+logger.info(f"ENV: {os.getenv('ENVIRONMENT', 'development')}")
+logger.info(f"LOG_LEVEL: {os.getenv('LOG_LEVEL', 'INFO')} | LOG_JSON: {os.getenv('LOG_JSON', 'false')}")
 
 # Load .env file early so env vars are available
 # For packaged apps, look in the working directory (not exe dir)
@@ -189,15 +171,9 @@ async def trading_loop():
 
 
 # --- App lifecycle ---
-# Demo mode flag - set to True when MongoDB unavailable
-DEMO_MODE_ACTIVE = False
-
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    global DEMO_MODE_ACTIVE
-    DEMO_MODE_ACTIVE = False
-    
-    # Always require MongoDB - no demo/in-memory mode
+    # Always require MongoDB
     mongo_works = True
     mongo_error = None
     
@@ -243,6 +219,7 @@ async def lifespan(application: FastAPI):
         await deps.db.profits.create_index("symbol", unique=True)
         await deps.db.audit_logs.create_index("timestamp")
         await deps.db.audit_logs.create_index("event_type")
+        logger.info("Database indexes created")
     except Exception as e:
         deps.logger.warning(f"Failed to create indexes: {e}")
 
@@ -255,12 +232,14 @@ async def lifespan(application: FastAPI):
                 await deps.db.tickers.update_one(
                     {"symbol": sym}, {"$setOnInsert": t.model_dump()}, upsert=True
                 )
+            logger.info(f"Seeded default tickers: TSLA, AAPL, NVDA")
     except Exception as e:
         deps.logger.warning(f"Failed to seed defaults: {e}")
 
     # Restore engine state
     try:
         await asyncio.wait_for(deps.engine.load_state(), timeout=3.0)
+        logger.info("Engine state loaded")
     except Exception as e:
         deps.logger.warning(f"Failed to load engine state: {e}")
     
@@ -325,7 +304,9 @@ async def lifespan(application: FastAPI):
     yield
 
     # --- Graceful Shutdown ---
-    deps.logger.info("Sentinel Pulse shutting down...")
+    logger.info("=" * 80)
+    logger.info("🛑 Sentinel Pulse SHUTTING DOWN...")
+    logger.info("Cancelling tasks, closing broker sessions, flushing audit logs...")
 
     # 1. Cancel background tasks gracefully
     try:
@@ -334,13 +315,15 @@ async def lifespan(application: FastAPI):
             if task is not current_task and not task.done():
                 task.cancel()
         await asyncio.gather(*asyncio.all_tasks(), return_exceptions=True)
+        logger.info("Background tasks cancelled")
     except Exception as e:
-        deps.logger.warning(f"Task cancellation warning: {e}")
+        logger.warning(f"Task cancellation warning: {e}")
 
     # 2. Stop WS broadcast loop first to stop accepting new messages
     try:
         if hasattr(deps.ws_manager, 'stop_broadcast_loop'):
             await deps.ws_manager.stop_broadcast_loop()
+        logger.info("WebSocket broadcast loop stopped")
     except Exception:
         pass
     
@@ -350,6 +333,7 @@ async def lifespan(application: FastAPI):
             deps.engine.running = False
             deps.engine.paused = True
         await deps.engine.save_state()
+        logger.info("Engine state saved")
     except Exception:
         pass
     
@@ -357,6 +341,7 @@ async def lifespan(application: FastAPI):
     try:
         if hasattr(deps.broker_mgr, 'save_idempotency_keys'):
             await deps.broker_mgr.save_idempotency_keys()
+        logger.info("Broker sessions closed")
     except Exception:
         pass
     
@@ -364,6 +349,7 @@ async def lifespan(application: FastAPI):
     try:
         if deps.telegram_service:
             await deps.telegram_service.stop()
+        logger.info("Telegram service stopped")
     except Exception:
         pass
     
@@ -372,8 +358,8 @@ async def lifespan(application: FastAPI):
         if hasattr(deps, "mongo_client") and deps.mongo_client:
             deps.mongo_client.close()
     except Exception as e:
-        deps.logger.warning(f"MongoDB close warning: {e}")
-    deps.logger.info("Sentinel Pulse shutdown complete")
+        logger.warning(f"MongoDB close warning: {e}")
+    logger.info("✅ Shutdown complete. Goodbye.")
 
 
 # --- FastAPI app ---
