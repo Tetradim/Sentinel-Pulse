@@ -89,6 +89,26 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 
 ## Quick Start
 
+### Prerequisites
+
+1. **MongoDB Server 8.2+** - Download from https://www.mongodb.com/try/download/community
+
+2. **Start MongoDB** (before running Sentinel Pulse):
+
+**Option A: Double-click the script**
+```bash
+# Double-click Start-MongoDB.bat
+# OR
+pwsh Start-MongoDB.ps1
+```
+
+**Option B: Manual command prompt**
+```bash
+cd C:\Program Files\MongoDB\Server\8.2\bin
+mongod --dbpath C:\data\db
+```
+
+3. **Start Sentinel Pulse**
 ```bash
 # Backend
 cd backend
