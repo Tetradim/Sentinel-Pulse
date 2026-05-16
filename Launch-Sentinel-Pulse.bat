@@ -71,7 +71,7 @@ echo ==================================================
 echo   Ready! Opening dashboard...
 echo ==================================================
 timeout /t 2 /nobreak > nul
-start http://localhost:3000
+start http://localhost:8002
 
 echo.
 echo Press any key to exit (MongoDB will keep running)...

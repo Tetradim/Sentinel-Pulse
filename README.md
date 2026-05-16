@@ -128,7 +128,7 @@ yarn install
 yarn dev
 ```
 
-Dashboard: `http://localhost:3000`
+Dashboard: `http://localhost:8002`
 
 ### Demo Mode (No MongoDB Required)
 

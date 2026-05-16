@@ -128,7 +128,7 @@ Write-Host "API Docs:   http://localhost:$AppPort/docs" -ForegroundColor Gray
 Write-Host ""
 
 Start-Sleep -Seconds 2
-Start-Process "http://localhost:3000"
+Start-Process "http://localhost:$AppPort"
 
 Write-Host "Press any key to exit..." -ForegroundColor Gray
 Read-Host ""
