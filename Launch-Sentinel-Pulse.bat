@@ -250,47 +250,59 @@ echo.
 echo [5/5] Starting Sentinel Pulse Server...
 echo [5/5] Starting server >> %LOG_FILE%
 
-:: Check for server.py
-echo [DEBUG] Checking for server files...
+:: Look for SentinelPulse.exe (may be at root level)
+if exist "%PROJECT_DIR%\SentinelPulse.exe" (
+    echo   Found: SentinelPulse.exe (ROOT)
+    echo   SentinelPulse.exe: ROOT >> %LOG_FILE%
+    start "" "%PROJECT_DIR%\SentinelPulse.exe"
+    echo   Started: SentinelPulse.exe
+    echo   SentinelPulse.exe: started >> %LOG_FILE%
+    goto :server_started
+)
+
+:: Look in _internal folder
+if exist "%PROJECT_DIR%_internal\SentinelPulse.exe" (
+    echo   Found: _internal\SentinelPulse.exe
+    echo   SentinelPulse.exe: _internal >> %LOG_FILE%
+    start "" "%PROJECT_DIR%_internal\SentinelPulse.exe"
+    echo   Started: SentinelPulse.exe
+    goto :server_started
+)
+
+:: Look for server.py in _internal
+if exist "%PROJECT_DIR%_internal\server.py" (
+    echo   Found: _internal\server.py
+    echo   server.py: _internal >> %LOG_FILE%
+    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%_internal" ^&^& "!PYTHON!" server.py 2>>"%PROJECT_DIR%\logs\server.log""
+    echo   Started: server.py
+    echo   server.py: started >> %LOG_FILE%
+    goto :server_started
+)
+
+:: Look in backend (original location)
 if exist "%PROJECT_DIR%\backend\server.py" (
     echo   Found: backend\server.py
-    echo   server.py: FOUND >> %LOG_FILE%
-) else (
-    echo   NOT found: backend\server.py
-    echo   server.py: NOT FOUND >> %LOG_FILE%
+    echo   server.py: backend >> %LOG_FILE%
+    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%\backend" ^&^& "!PYTHON!" server.py 2>>"%PROJECT_DIR%\logs\server.log""
+    echo   Started: server.py
+    echo   server.py: started >> %LOG_FILE%
+    goto :server_started
 )
 
 if exist "%PROJECT_DIR%\backend\SentinelPulse.exe" (
     echo   Found: backend\SentinelPulse.exe
-    echo   SentinelPulse.exe: FOUND >> %LOG_FILE%
-) else (
-    echo   NOT found: backend\SentinelPulse.exe
-    echo   SentinelPulse.exe: NOT FOUND >> %LOG_FILE%
+    start "" "%PROJECT_DIR%\backend\SentinelPulse.exe"
+    echo   Started: SentinelPulse.exe
+    goto :server_started
 )
 
-:: Start the server
-if defined PYTHON (
-    if exist "%PROJECT_DIR%\backend\server.py" (
-        echo   Starting server.py...
-        echo   Starting: !PYTHON! server.py >> %LOG_FILE%
-        echo [DEBUG] Command: cd /d "%PROJECT_DIR%\backend" ^&^& "!PYTHON!" server.py
-        start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%\backend" ^&^& "!PYTHON!" server.py 2>>"%PROJECT_DIR%\logs\server.log""
-        echo   Server started
-        echo   Server: started >> %LOG_FILE%
-    ) else if exist "%PROJECT_DIR%\backend\SentinelPulse.exe" (
-        echo   Starting SentinelPulse.exe...
-        start "" "%PROJECT_DIR%\backend\SentinelPulse.exe"
-        echo   Server started
-    ) else (
-        echo   ERROR: No server file found
-        echo   ERROR: No server file >> %LOG_FILE%
-        echo   Files in backend: >> %LOG_FILE%
-        dir "%PROJECT_DIR%\backend" >> %LOG_FILE%
-    )
-) else (
-    echo   ERROR: Cannot start - no Python
-    echo   ERROR: No Python >> %LOG_FILE%
-)
+:: If we get here, no server found
+echo   ERROR: No server file found in any location
+echo   ERROR: Tried: root, _internal, backend >> %LOG_FILE%
+dir /s /b "%PROJECT_DIR%*.exe" >> %LOG_FILE% 2>&1
+dir /s /b "%PROJECT_DIR%*.py" >> %LOG_FILE% 2>&1
+
+:server_started
 
 timeout /t 4 /nobreak >nul
 
