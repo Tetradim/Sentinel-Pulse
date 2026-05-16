@@ -109,16 +109,31 @@ def setup_logging(
         level: Log level (DEBUG, INFO, WARNING, ERROR)
         json_format: Use JSON output (for production)
         include_correlation_ids: Enable correlation ID tracking
-        log_file: Path to log file
+        log_file: Path to log file (defaults to sentinel_pulse.log in current directory)
     """
     import os
     log_level = getattr(logging, level.upper(), logging.INFO)
+    is_frozen = getattr(sys, 'frozen', False)
     
-    # Handle frozen/pyinstaller exe paths
+    # Determine log path - use absolute path for reliability
+    # In dev: logs/sentinel_pulse.log (relative to where app is)
+    # In frozen: sentinel_pulse.log in CWD where exe was launched
     log_path = Path(log_file)
-    if getattr(sys, 'frozen', False):
+    if is_frozen:
         # Running as packaged exe - log to CWD where exe was launched from
         log_path = Path.cwd() / log_path.name
+        # Also try to use desktop path if CWD is not writable
+        try:
+            test_path = log_path.parent / log_path.name
+            with open(test_path, 'a') as f:
+                pass  # Test if writable
+        except Exception:
+            # Fall back to user's desktop
+            try:
+                desktop = Path.home() / "Desktop"
+                log_path = desktop / log_path.name
+            except Exception:
+                log_path = Path.cwd() / log_path.name
     
     # Root logger
     root = logging.getLogger()
@@ -128,9 +143,17 @@ def setup_logging(
     for handler in root.handlers[:]:
         root.removeHandler(handler)
     
+    handlers_added = []
+    
     # File handler with UTF-8 encoding
     try:
-        file_handler = logging.FileHandler(log_path, encoding='utf-8')
+        # Ensure parent directory exists
+        try:
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+        
+        file_handler = logging.FileHandler(str(log_path), encoding='utf-8')
         file_handler.setLevel(log_level)
         if json_format:
             file_handler.setFormatter(StructuredLogFormatter())
@@ -139,20 +162,43 @@ def setup_logging(
                 logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s')
             )
         root.addHandler(file_handler)
+        handlers_added.append(('file', str(log_path)))
     except Exception as e:
-        pass  # Fallback to console only
+        # Fallback: log to stderr in binary mode if file fails
+        import sys
+        try:
+            file_handler = logging.StreamHandler(sys.stderr)
+            file_handler.setFormatter(
+                logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s')
+            )
+            root.addHandler(file_handler)
+            handlers_added.append(('stderr', str(log_path)))
+        except Exception:
+            pass
     
-    # Console handler
-    console = logging.StreamHandler(sys.stdout)
-    console.setLevel(log_level)
-    
-    # Set formatter
-    if json_format:
-        console.setFormatter(StructuredLogFormatter())
-    else:
-        console.setFormatter(ColoredConsoleFormatter())
-    
-    root.addHandler(console)
+    # Console handler - handle case when stdout is None (--noconsole frozen apps)
+    try:
+        stream = sys.stdout if sys.stdout is not None else sys.stderr
+        if stream is None:
+            # Frozen --noconsole exe: no console attached, use NullHandler
+            root.addHandler(logging.NullHandler())
+        else:
+            # Try to reconfigure stream for UTF-8
+            try:
+                stream.reconfigure(errors='replace')
+            except Exception:
+                pass
+            
+            console = logging.StreamHandler(stream)
+            console.setLevel(log_level)
+            if json_format:
+                console.setFormatter(StructuredLogFormatter())
+            else:
+                console.setFormatter(ColoredConsoleFormatter())
+            root.addHandler(console)
+    except Exception:
+        # Last resort: add NullHandler
+        root.addHandler(logging.NullHandler())
     
     # Set level for our loggers
     for logger_name in ['sentinelpulse', 'SentinelPulse', 'trading_engine', 'broker']:
