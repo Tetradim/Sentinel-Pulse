@@ -42,10 +42,12 @@ Name: "launchapp"; Description: "Launch Sentinel Pulse after install"; GroupDesc
 
 [Files]
 Source: "backend\dist\SentinelPulse\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "Setup-And-Launch.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Launch-Sentinel-Pulse.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Launch-Sentinel-Pulse.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Start-MongoDB.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Start-MongoDB.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "start-sentinel.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
