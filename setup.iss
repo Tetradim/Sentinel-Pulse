@@ -42,14 +42,16 @@ Name: "launchapp"; Description: "Launch Sentinel Pulse after install"; GroupDesc
 
 [Files]
 Source: "backend\dist\SentinelPulse\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Setup-And-Launch.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "start-sentinel.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Launch-Sentinel-Pulse.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Launch-Sentinel-Pulse.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Start-MongoDB.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Start-MongoDB.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\Launch-Sentinel-Pulse.bat"; WorkingDir: "{app}"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\Setup-And-Launch.bat"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\Launch-Sentinel-Pulse.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{commondesktop}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Registry]

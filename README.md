@@ -89,26 +89,33 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 
 ## Quick Start
 
-### Prerequisites
+### Quick Start (After Installation)
 
-1. **MongoDB Server 8.2+** - Download from https://www.mongodb.com/try/download/community
+**Just double-click one file to start everything:**
 
-2. **Start MongoDB** (before running Sentinel Pulse):
-
-**Option A: Double-click the script**
 ```bash
-# Double-click Start-MongoDB.bat
-# OR
-pwsh Start-MongoDB.ps1
+# Option A: Double-click this file after installation
+Launch-Sentinel-Pulse.bat
+
+# Option B: Run PowerShell version
+pwsh Launch-Sentinel-Pulse.ps1
 ```
 
-**Option B: Manual command prompt**
-```bash
-cd C:\Program Files\MongoDB\Server\8.2\bin
-mongod --dbpath C:\data\db
-```
+The launcher will:
+1. Check MongoDB is installed
+2. Create data/logs directories if needed
+3. Start MongoDB (if not already running)
+4. Start Sentinel Pulse API server
+5. Open the dashboard in your browser
 
-3. **Start Sentinel Pulse**
+**That's it!**
+
+---
+
+### Development Start (without installation)
+
+Manual start for development:
+
 ```bash
 # Backend
 cd backend
@@ -121,18 +128,9 @@ yarn install
 yarn dev
 ```
 
-Dashboard: `http://localhost:3000` — WebSocket connects automatically on load.
+Dashboard: `http://localhost:3000`
 
 ### Demo Mode (No MongoDB Required)
-
-Run without MongoDB for testing or demo purposes:
-
-```bash
-cd backend
-export DEMO_MODE=true
-export PORT=8002
-uvicorn server:app --host 0.0.0.0 --port 8002
-```
 
 - **Default tickers** seeded automatically: SPY, QQQ, AAPL, NVDA
 - **In-memory storage** — data not persisted
