@@ -119,12 +119,40 @@ echo [4/5] Starting Sentinel Pulse Server...
 echo   Starting Sentinel Pulse... >> %LOG_FILE%
 
 :: Start the server with logging
-echo DEBUG: Checking server.py: backend\server.py exists=%ERRORLEVEL%
+:: First find python - check multiple locations
+set PYTHON=
+where python >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "delims=" %%i in ('where python') do set PYTHON=%%i
+)
+
+:: Try common Python locations if not in PATH
+if not defined PYTHON (
+    if exist "C:\Python312\python.exe" set PYTHON=C:\Python312\python.exe
+    if exist "C:\Python311\python.exe" set PYTHON=C:\Python311\python.exe
+    if exist "C:\Python310\python.exe" set PYTHON=C:\Python310\python.exe
+    if exist "C:\Program Files\Python312\python.exe" set PYTHON=C:\Program Files\Python312\python.exe
+    if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set PYTHON=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
+    if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set PYTHON=%LOCALAPPDATA%\Programs\Python\Python311\python.exe
+)
+
+if defined PYTHON (
+    echo   Server: Python: %PYTHON%
+    echo   Server: Python %PYTHON% >> %LOG_FILE%
+) else (
+    echo   ERROR: Python not found
+    echo   ERROR: Python not found >> %LOG_FILE%
+    echo   Install Python from python.org
+    pause
+    exit /b 1
+)
+
 if exist "backend\server.py" (
     echo   Server: backend\server.py found
     echo   Server: backend\server.py found >> %LOG_FILE%
-    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%backend" && python server.py >> ..\\logs\\server.log 2>&1"
-    echo   Server starting...
+    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%backend" ^&^& "%PYTHON%" server.py 2>>"%PROJECT_DIR%logs\server.log""
+    echo   Server started
+    echo   Server started >> %LOG_FILE%
 ) else if exist "backend\SentinelPulse.exe" (
     echo   Server: SentinelPulse.exe found
     echo   Server: SentinelPulse.exe found >> %LOG_FILE%
