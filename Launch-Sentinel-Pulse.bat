@@ -12,8 +12,23 @@ set "PROJECT_DIR=%~dp0"
 set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 set PORT=8002
 set MONGODB_PORT=27017
-set DESKTOP=%USERPROFILE%\Desktop
+
+:: Get desktop path using PowerShell (works correctly in admin mode)
+for /f "delims=" %%d in ('powershell -Command "[Environment]::GetFolderPath('Desktop')"') do set DESKTOP=%%d
+
+:: Fallback if that fails
+if not defined DESKTOP set DESKTOP=%USERPROFILE%\Desktop
+
 set LOG_FILE=%DESKTOP%\sentinel_pulse.log
+
+:: Test writing to log immediately
+echo [DEBUG] === LAUNCHER === > "%LOG_FILE%"
+echo USERPROFILE=%USERPROFILE% >> "%LOG_FILE%"
+echo DESKTOP=%DESKTOP% >> "%LOG_FILE%"
+echo LOG=%LOG_FILE% >> "%LOG_FILE%"
+
+echo [DEBUG] DESKTOP=%DESKTOP%
+echo [DEBUG] LOG=%LOG_FILE%
 
 :: ================================================================
 :: DEBUG: System Information
