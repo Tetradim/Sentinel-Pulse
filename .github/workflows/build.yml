@@ -2,7 +2,7 @@ name: Build Sentinel Pulse
 
 on:
   push:
-    branches: [Split, main, Sentinel-Prod]
+    branches: [main, main-2, Sentinel-Prod]
     paths:
       - 'backend/**'
       - 'frontend/**'
@@ -19,9 +19,49 @@ on:
 env:
   APP_NAME: "Sentinel Pulse"
   VERSION: ${{ github.event.inputs.version || '1.0.0-beta' }}
+  PYTHON_VERSION: "3.11"
 
 jobs:
+  # ---------------------------------------------------------------------
+  # Test Job - runs on Ubuntu, fails gracefully
+  # ---------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python deps
+        run: |
+          echo "=== Installing backend dependencies ==="
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run tests
+        run: |
+          echo "=== Running pytest ==="
+          cd backend
+          python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term 2>&1 || echo "Tests failed but continuing build"
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: backend/coverage.xml
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------
+  # Build Job - runs on Windows
+  # ---------------------------------------------------------------------
   build:
+    needs: test
     runs-on: windows-latest
     timeout-minutes: 90
     name: Build Windows Installer
@@ -63,6 +103,7 @@ jobs:
       # ---------------------------------------------------------------------
       - name: Build frontend
         run: |
+          Write-Host "=== Starting Frontend Build ===" -ForegroundColor Cyan
           cd frontend
           if (Test-Path node_modules) {
             Write-Host "Clearing npm cache..."
@@ -70,8 +111,11 @@ jobs:
           }
           Remove-Item dist -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item node_modules -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Installing npm packages..."
           npm install
+          Write-Host "Running Vite build..."
           npm run build
+          Write-Host "=== Frontend Build Complete ===" -ForegroundColor Green
 
       # ---------------------------------------------------------------------
       # 5b. Verify frontend build
@@ -113,6 +157,7 @@ jobs:
       - name: Build exe
         working-directory: backend
         run: |
+          Write-Host "=== PyInstaller Build Starting ===" -ForegroundColor Cyan
           Write-Host "Clearing PyInstaller cache - FORCE..."
           Remove-Item build -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item dist -Recurse -Force -ErrorAction SilentlyContinue
@@ -120,9 +165,14 @@ jobs:
           Remove-Item backend\dist -Recurse -Force -ErrorAction SilentlyContinue
           $cacheDir = "$env:LOCALAPPDATA\pyinstaller"
           if (Test-Path $cacheDir) {
+            Write-Host "Removing PyInstaller cache..."
             Remove-Item $cacheDir -Recurse -Force -ErrorAction SilentlyContinue
           }
-          python -m PyInstaller --clean sentinel_win.spec
+          Write-Host "Running PyInstaller..."
+          python -m PyInstaller --clean sentinel_win.spec 2>&1 | Tee-Object -FilePath build.log
+          Write-Host "=== Build log (last 50 lines) ===" -ForegroundColor Yellow
+          Get-Content build.log -Tail 50
+          Write-Host "=== PyInstaller Build Complete ===" -ForegroundColor Green
 
       # ---------------------------------------------------------------------
       # 8. Download portable MongoDB
