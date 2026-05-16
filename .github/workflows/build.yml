@@ -279,6 +279,28 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      # ---------------------------------------------------------------------
+      # 14. Upload build log for debugging
+      # ---------------------------------------------------------------------
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: backend/build.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      # ---------------------------------------------------------------------
+      # 15. Copy log to desktop
+      # ---------------------------------------------------------------------
+      - name: Copy log to desktop
+        run: |
+          $desktop = [Environment]::GetFolderPath("Desktop")
+          if (Test-Path "backend\build.log") {
+            Copy-Item "backend\build.log" -Destination "$desktop\SentinelPulse-build.log" -Force
+            Write-Host "Build log copied to desktop"
+          }
+
       # - name: Upload Standalone Folder
       #   uses: actions/upload-artifact@v4
       #   with:
