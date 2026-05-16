@@ -111,7 +111,7 @@ def setup_logging(
         include_correlation_ids: Enable correlation ID tracking
         log_file: Path to log file (defaults to sentinel_pulse.log in current directory)
     """
-    import os
+    # Note: sys and os already imported at module level
     log_level = getattr(logging, level.upper(), logging.INFO)
     is_frozen = getattr(sys, 'frozen', False)
     
