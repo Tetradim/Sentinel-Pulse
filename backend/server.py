@@ -447,15 +447,15 @@ app.include_router(api)
 async def stream_logs():
     """Stream logs in real-time via SSE."""
     import asyncio
+    from pathlib import Path
     
-    # Find the log file from the root logger's handlers
-    log_path = None
-    for handler in logging.root.handlers:
-        if hasattr(handler, 'baseFilename'):
-            log_path = Path(handler.baseFilename).parent / "pulse.log"
-            break
+    # Always use desktop path for packaged app
+    if getattr(sys, 'frozen', False):
+        log_path = Path.home() / "Desktop" / "sentinel_pulse.log"
+    else:
+        log_path = Path("logs") / "sentinel_pulse.log"
     
-    if not log_path or not log_path.exists():
+    if not log_path.exists():
         return {"error": "Log file not found"}
     
     async def generate():
@@ -475,13 +475,16 @@ async def stream_logs():
 @app.get("/api/logs/recent")
 async def recent_logs(lines: int = 200, level: str = "DEBUG"):
     """Get recent log entries."""
-    log_path = None
-    for handler in logging.root.handlers:
-        if hasattr(handler, 'baseFilename'):
-            log_path = Path(handler.baseFilename).parent / "pulse.log"
-            break
+    import json
+    from pathlib import Path
     
-    if not log_path or not log_path.exists():
+    # Always use desktop path for packaged app
+    if getattr(sys, 'frozen', False):
+        log_path = Path.home() / "Desktop" / "sentinel_pulse.log"
+    else:
+        log_path = Path("logs") / "sentinel_pulse.log"
+    
+    if not log_path.exists():
         return {"logs": []}
     
     try:
