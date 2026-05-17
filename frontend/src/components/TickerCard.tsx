@@ -33,13 +33,6 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmTP,     setConfirmTP]     = useState(false);
-  // Grid resize: span 1-3 columns
-  const [colSpan, setColSpan] = useState(1);
-
-  // Cycle colSpan 1 → 2 → 3 → 1 on resize handle click
-  const cycleColSpan = () => {
-    setColSpan(s => s >= 3 ? 1 : s + 1);
-  };
   const [quickEdit,     setQuickEdit]     = useState({ buy: false, sell: false, stop: false });
   const [editVals,      setEditVals]      = useState({ buy: ticker.buy_offset, sell: ticker.sell_offset, stop: ticker.stop_offset });
   const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
@@ -182,7 +175,8 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
       }}
       style={{
         ...dndStyle,
-        gridColumn: `span ${colSpan}`,
+        ...(cardSize.width > 0 ? { width: cardSize.width, minWidth: cardSize.width } : {}),
+        ...(cardSize.height > 0 ? { minHeight: cardSize.height } : {}),
       }}
       className={cardClass}
       data-testid={`ticker-card-${ticker.symbol}`}
@@ -336,11 +330,11 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
         </div>
       </div>
 
-      {/* Resize handle - cycles colSpan 1→2→3→1 */}
+      {/* Resize handle - drag to resize */}
       <div 
         className="sp-resize-handle" 
-        onClick={cycleColSpan}
-        title={`Size: ${colSpan} column${colSpan > 1 ? 's' : ''} (click to change)`}
+        onMouseDown={handleResizeStart}
+        style={{ cursor: isResizing ? 'grabbing' : 'se-resize' }}
       />
     </div>
   );
