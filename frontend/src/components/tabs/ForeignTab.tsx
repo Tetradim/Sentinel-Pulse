@@ -52,13 +52,15 @@ export function ForeignTab() {
   const fetchMarkets = useCallback(async () => {
     try {
       const data = await apiFetch('/api/markets');
+      console.log('[ForeignTab] markets API response:', data);
       const map: Record<string, MarketInfo> = {};
       for (const m of data.markets) {
         map[m.code] = m;
       }
+      console.log('[ForeignTab] loaded markets:', Object.keys(map));
       setMarkets(map);
     } catch (err) {
-      console.error('Failed to fetch markets:', err);
+      console.error('[ForeignTab] Failed to fetch markets:', err);
     } finally {
       setLoading(false);
     }
