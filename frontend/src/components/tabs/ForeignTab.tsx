@@ -58,6 +58,8 @@ export function ForeignTab() {
         map[m.code] = m;
       }
       console.log('[ForeignTab] loaded markets:', Object.keys(map));
+      console.log('[ForeignTab] FOREIGN_CODES:', FOREIGN_CODES);
+      console.log('[ForeignTab] testing access - HK:', map['HK'], 'AU:', map['AU']);
       setMarkets(map);
     } catch (err) {
       console.error('[ForeignTab] Failed to fetch markets:', err);

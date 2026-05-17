@@ -348,10 +348,10 @@ export function WatchlistTab() {
       </div>
 
       {/* Config modal */}
-      {configSymbol && (
+      {configSymbol && tickers[configSymbol] && (
         <ErrorBoundary fallbackLabel="Config modal failed">
           <ConfigModal
-            symbol={configSymbol}
+            ticker={tickers[configSymbol]}
             onClose={() => setConfigSymbol(null)}
           />
         </ErrorBoundary>
