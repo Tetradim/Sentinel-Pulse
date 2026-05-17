@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback, useEffect } from 'react';
+import React, { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { useStore, TickerConfig } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { Switch } from '@/components/ui/switch';
@@ -31,10 +31,54 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
   const [confirmTP,     setConfirmTP]     = useState(false);
   const [quickEdit,     setQuickEdit]     = useState({ buy: false, sell: false, stop: false });
   const [editVals,      setEditVals]      = useState({ buy: ticker.buy_offset, sell: ticker.sell_offset, stop: ticker.stop_offset });
+  const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
+  const resizeRef = useRef<HTMLDivElement>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
 
   useEffect(() => {
     setEditVals({ buy: ticker.buy_offset, sell: ticker.sell_offset, stop: ticker.stop_offset });
   }, [ticker.buy_offset, ticker.sell_offset, ticker.stop_offset]);
+
+  // Handle click vs double-click properly
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastClickTime < 300) {
+      // Double click - open config
+      e.preventDefault();
+      onConfigOpen(ticker.symbol);
+    }
+    setLastClickTime(now);
+  }, [lastClickTime, onConfigOpen, ticker.symbol]);
+
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = resizeRef.current?.offsetWidth || 0;
+    const startHeight = resizeRef.current?.offsetHeight || 0;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const newWidth = startWidth + (moveEvent.clientX - startX);
+      const newHeight = startHeight + (moveEvent.clientY - startY);
+      if (newWidth >= 200 && newHeight >= 215) {
+        setCardSize({ width: newWidth, height: newHeight });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, []);
 
   const isActive   = ticker.enabled;
   const isPositive = pnl >= 0;
@@ -121,11 +165,18 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
 
   return (
     <div
-      ref={setNodeRef}
-      style={dndStyle}
+      ref={(el) => {
+        setNodeRef(el);
+        if (el) resizeRef.current = el;
+      }}
+      style={{
+        ...dndStyle,
+        ...(cardSize.width > 0 ? { width: cardSize.width, minWidth: cardSize.width } : {}),
+        ...(cardSize.height > 0 ? { minHeight: cardSize.height } : {}),
+      }}
       className={cardClass}
       data-testid={`ticker-card-${ticker.symbol}`}
-      onDoubleClick={() => onConfigOpen(ticker.symbol)}
+      onClick={handleClick}
     >
       {/* Sci-fi tunnel background */}
       <div className="sp-ticker-tunnel">
@@ -276,7 +327,11 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
       </div>
 
       {/* Resize handle */}
-      <div className="sp-resize-handle" />
+      <div 
+        className="sp-resize-handle" 
+        onMouseDown={handleResizeStart}
+        style={{ cursor: isResizing ? 'grabbing' : 'se-resize' }}
+      />
     </div>
   );
 });
