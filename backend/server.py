@@ -59,7 +59,7 @@ if getattr(sys, 'frozen', False):
 else:
     load_dotenv()
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Request
 from starlette.middleware.cors import CORSMiddleware
 
 # Shared state (must be imported first — populates db, logger, etc.)
@@ -441,6 +441,71 @@ api.include_router(developer_router)
 api.include_router(auth_router)
 
 app.include_router(api)
+
+# --- Log streaming endpoints ---
+@app.get("/api/logs/stream")
+async def stream_logs():
+    """Stream logs in real-time via SSE."""
+    import asyncio
+    
+    # Find the log file from the root logger's handlers
+    log_path = None
+    for handler in logging.root.handlers:
+        if hasattr(handler, 'baseFilename'):
+            log_path = Path(handler.baseFilename).parent / "pulse.log"
+            break
+    
+    if not log_path or not log_path.exists():
+        return {"error": "Log file not found"}
+    
+    async def generate():
+        with open(log_path, "r", encoding="utf-8") as f:
+            f.seek(0, 2)  # seek to end
+            while True:
+                line = f.readline()
+                if line:
+                    yield f"data: {line}\n\n"
+                else:
+                    await asyncio.sleep(0.25)
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@app.get("/api/logs/recent")
+async def recent_logs(lines: int = 200, level: str = "DEBUG"):
+    """Get recent log entries."""
+    log_path = None
+    for handler in logging.root.handlers:
+        if hasattr(handler, 'baseFilename'):
+            log_path = Path(handler.baseFilename).parent / "pulse.log"
+            break
+    
+    if not log_path or not log_path.exists():
+        return {"logs": []}
+    
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            all_lines = f.readlines()[-lines:]
+        parsed = []
+        for line in all_lines:
+            try:
+                entry = json.loads(line)
+                if level == "DEBUG" or entry.get("level") == level:
+                    parsed.append(entry)
+            except json.JSONDecodeError:
+                pass
+        return {"logs": parsed}
+    except FileNotFoundError:
+        return {"logs": []}
+
+
+@app.post("/api/logs/client-error")
+async def log_client_error(request: Request):
+    """Receive frontend errors."""
+    body = await request.json()
+    logger.error("Frontend error: %s", body.get("message"), extra={"extra": body})
+    return {"ok": True}
 
 # --- Static file serving (for packaged desktop builds) ---
 _static_dir = Path(__file__).parent / "static"

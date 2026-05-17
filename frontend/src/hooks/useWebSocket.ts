@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/stores/useStore';
+import { wsLog } from '@/lib/wsLogger';
 
 // Vite uses VITE_ prefix for env vars (CRA used REACT_APP_)
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
@@ -36,6 +37,7 @@ export function useWebSocket() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        wsLog.in(data.type, data);
         console.log('[WS] onmessage:', data.type, data);
 
         if (data.type === 'INITIAL_STATE') {
@@ -159,10 +161,12 @@ export function useWebSocket() {
   const send = useCallback((action: string, payload: Record<string, any> = {}) => {
     const msg = { action, ...payload };
     console.log('[WS] send:', action, payload);
+    wsLog.out(action, payload);
     if (socket.current?.readyState === WebSocket.OPEN) {
       socket.current.send(JSON.stringify(msg));
     } else {
       console.warn('[WS] send failed - socket not open:', socket.current?.readyState);
+      wsLog.error(action, 'Socket not open — message dropped');
     }
   }, []);
 
