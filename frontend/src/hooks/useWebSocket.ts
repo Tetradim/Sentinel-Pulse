@@ -18,6 +18,7 @@ function getWsUrl(): string {
 export function useWebSocket() {
   const socket = useRef<WebSocket | null>(null);
   const reconnect = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectDelay = useRef(3000); // Start at 3s, exponential: 3s→6s→12s→30s...→5min max
   const store = useStore();
 
   const connect = useCallback(() => {
@@ -117,8 +118,6 @@ export function useWebSocket() {
       }
     };
 
-    const reconnectDelay = useRef(3000); // Start at 3s, exponential: 3s→6s→12s→30s...→5min max
-    
     ws.onclose = () => {
       store.setConnected(false);
       const delay = Math.min(reconnectDelay.current, 300000); // Cap at 5 minutes
