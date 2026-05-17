@@ -699,11 +699,13 @@ function BrokerAllocationsSection() {
   const handleBlur = (symbol: string, brokerId: string) => {
     const raw = editValues[symbol]?.[brokerId] ?? '0';
     const num = parseFloat(raw);
+    console.log('[Settings] handleBlur:', symbol, brokerId, '->', num, 'raw:', raw);
     if (isNaN(num) || num < 0) return;
     const ticker = tickers.find(t => t.symbol === symbol);
     if (!ticker) return;
     const newAlloc = { ...(ticker.broker_allocations || {}), [brokerId]: num };
     const newTotal = Object.values(newAlloc).reduce((s, v) => s + v, 0);
+    console.log('[Settings] UPDATE_TICKER:', { symbol, broker_allocations: newAlloc, base_power: newTotal });
     send('UPDATE_TICKER', { symbol, broker_allocations: newAlloc, base_power: newTotal });
     toast.success(`${symbol}: ${brokerId} = $${num.toFixed(2)} (total: $${newTotal.toFixed(2)})`);
   };

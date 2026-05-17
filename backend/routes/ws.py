@@ -96,6 +96,7 @@ async def ws_endpoint(websocket: WebSocket):
             elif action == "UPDATE_TICKER":
                 sym = msg.get("symbol", "").upper()
                 updates = {k: v for k, v in msg.items() if k not in ("action", "symbol")}
+                logger.info(f"[UPDATE_TICKER] symbol={sym} keys={list(updates.keys())}")
                 NUMERIC_BOUNDS = {
                     "base_power": (1, 10_000_000), "buy_offset": (-99999, 99999),
                     "sell_offset": (-99999, 99999), "stop_offset": (-99999, 99999),
@@ -115,9 +116,11 @@ async def ws_endpoint(websocket: WebSocket):
                             valid = False
                             break
                 if updates and valid:
-                    await deps.db.tickers.update_one({"symbol": sym}, {"$set": updates})
+                    result = await deps.db.tickers.update_one({"symbol": sym}, {"$set": updates})
+                    logger.info(f"[UPDATE_TICKER] result={result.modified_count} modified")
                     doc = await deps.db.tickers.find_one({"symbol": sym}, {"_id": 0})
                     if doc:
+                        logger.info(f"[UPDATE_TICKER] doc allocations={doc.get('broker_allocations')}")
                         await deps.ws_manager.broadcast({"type": "TICKER_UPDATED", "ticker": doc})
 
             elif action == "START_BOT":
