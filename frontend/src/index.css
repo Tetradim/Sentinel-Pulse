@@ -33,6 +33,12 @@
   h1,h2,h3,h4,h5,h6 { font-family:'Syne',system-ui,sans-serif; }
 }
 
+/* Glass container for sections */
+.glass {
+  background: rgba(10, 6, 8, 0.85);
+  backdrop-filter: blur(8px);
+}
+
 /* ── FULL PAGE BG — Image 5 gold X triangle tiled ── */
 .sp-bg { position:fixed; inset:0; z-index:0; pointer-events:none; background-color:var(--page-bg); }
 .sp-bg-pattern {
