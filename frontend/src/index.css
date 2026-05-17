@@ -152,7 +152,8 @@
 .sp-sec-action:hover { color:#c8920a; }
 
 /* ── TICKER GRID ── */
-.sp-ticker-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+/* Use explicit columns with auto-fit so colSpan works - spans 1, 2, or 3 columns */
+.sp-ticker-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
 .sp-ticker-card { position:relative; overflow:hidden; cursor:default; border-radius:6px; border:1px solid rgba(180,130,10,0.15); min-height:215px; display:flex; flex-direction:column; transition:border-color .2s,transform .12s,box-shadow .2s; background:#050204; }
 .sp-ticker-card.active { border-color:rgba(200,145,10,0.65); box-shadow:0 0 0 1px rgba(200,145,10,0.3),0 0 24px -4px rgba(200,145,10,0.45); }
 .sp-ticker-card.negative { border-color:rgba(192,40,46,0.28); }
