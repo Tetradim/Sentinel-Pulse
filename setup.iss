@@ -42,13 +42,14 @@ Name: "launchapp"; Description: "Launch Sentinel Pulse after install"; GroupDesc
 
 [Files]
 Source: "backend\dist\SentinelPulse\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Setup-And-Launch.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Launch-Sentinel-Pulse.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Launch-Sentinel-Pulse.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Start-MongoDB.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Start-MongoDB.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "setup-and-launch.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "launch-sentinel-pulse.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "launch-sentinel-pulse.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "start-mongodb.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "start-mongodb.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "start-sentinel.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "backend\.env.example"; DestDir: "{app}"; Flags: ignoreversion; Check: not FileExists(ExpandConstant('{app}\.env'))
+Source: "readme.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\Launch-Sentinel-Pulse.bat"; WorkingDir: "{app}"
@@ -98,12 +99,13 @@ end;
 // Create necessary directories after installation
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  DataPath, LogPath: String;
+  DataPath, LogPath, EnvFile: String;
 begin
   if CurStep = ssPostInstall then
   begin
     DataPath := ExpandConstant('{app}\data\db');
     LogPath := ExpandConstant('{app}\logs');
+    EnvFile := ExpandConstant('{app}\.env');
 
     // Create data directory for MongoDB
     if not DirExists(DataPath) then
@@ -112,6 +114,13 @@ begin
     // Create logs directory
     if not DirExists(LogPath) then
       CreateDir(LogPath);
+
+    // Create .env from .env.example if not present
+    if not FileExists(EnvFile) then
+    begin
+      if FileExists(ExpandConstant('{app}\.env.example')) then
+        FileCopy(ExpandConstant('{app}\.env.example'), EnvFile, False);
+    end;
   end;
 end;
 
