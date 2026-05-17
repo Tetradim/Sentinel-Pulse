@@ -94,10 +94,9 @@ dir /b "%PROJECT_DIR%" >> %LOG_FILE%
 echo   Project roots: 
 dir /b "%PROJECT_DIR%"
 
-echo [DEBUG] backend\ contents: >> %LOG_FILE%
-dir /b "%PROJECT_DIR%\backend" >> %LOG_FILE%
-echo   Backend files: 
-dir /b "%PROJECT_DIR%\backend"
+echo [DEBUG] Checking other locations:
+dir /b "%PROJECT_DIR%\backend" >> %LOG_FILE% 2>&1
+dir /b "%PROJECT_DIR%_internal" >> %LOG_FILE% 2>&1
 
 :: ================================================================
 :: 1. Check/create directories and .env
@@ -106,19 +105,30 @@ echo.
 echo [1/5] Checking prerequisites...
 echo [1/5] Checking prerequisites >> %LOG_FILE%
 
-:: Check .env
-echo [DEBUG] Checking .env...
-if exist ".env" (
-    echo   .env found
-    echo   .env: found >> %LOG_FILE%
+:: Check .env in multiple locations
+set ENV_FOUND=
+if exist "%PROJECT_DIR%.env" (
+    set ENV_FOUND=%PROJECT_DIR%.env
+    echo   .env found at ROOT
+) else if exist "%PROJECT_DIR%\backend\.env" (
+    set ENV_FOUND=%PROJECT_DIR%\backend\.env
+    echo   .env found in backend
+) else if exist "%PROJECT_DIR%\backend\.env.example" (
+    copy "%PROJECT_DIR%\backend\.env.example" "%PROJECT_DIR%\backend\.env" >nul
+    set ENV_FOUND=%PROJECT_DIR%\backend\.env
+    echo   .env created from backend\.env.example
+) else if exist "%PROJECT_DIR%_internal\.env.example" (
+    copy "%PROJECT_DIR%_internal\.env.example" "%PROJECT_DIR%_internal\.env" >nul
+    set ENV_FOUND=%PROJECT_DIR%_internal\.env
+    echo   .env created from _internal\.env.example
+)
+
+if defined ENV_FOUND (
+    echo   .env: OK
+    echo   .env: OK at %ENV_FOUND% >> %LOG_FILE%
 ) else (
-    echo   .env NOT found
+    echo   .env: NOT FOUND - app may fail to start
     echo   .env: NOT FOUND >> %LOG_FILE%
-    if exist ".env.example" (
-        copy .env.example .env >nul
-        echo   Created .env from template
-        echo   Created .env from .env.example >> %LOG_FILE%
-    )
 )
 
 :: Check/create directories
@@ -298,7 +308,8 @@ if exist "%PROJECT_DIR%_internal\server.py" (
 if exist "%PROJECT_DIR%\backend\server.py" (
     echo   Found: backend\server.py
     echo   server.py: backend >> %LOG_FILE%
-    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%\backend" ^&^& "!PYTHON!" server.py 2>>"%PROJECT_DIR%\logs\server.log""
+    set SERVER_LOG=%PROJECT_DIR%\logs\server.log
+    start "SentinelPulse" /min cmd /c "cd /d "%PROJECT_DIR%\backend" ^&^& "!PYTHON!" server.py 2>>"%SERVER_LOG%""
     echo   Started: server.py
     echo   server.py: started >> %LOG_FILE%
     goto :server_started
@@ -320,6 +331,13 @@ dir /s /b "%PROJECT_DIR%*.py" >> %LOG_FILE% 2>&1
 :server_started
 
 timeout /t 4 /nobreak >nul
+
+:: Copy server.log to desktop in background
+set SERVER_LOG=%PROJECT_DIR%\logs\server.log
+if exist "%SERVER_LOG%" (
+    start /b cmd /c "copy /y "%SERVER_LOG%" "%DESKTOP%\server.log" >nul 2>&1"
+    echo   Log copied to desktop
+)
 
 :: ================================================================
 :: 6. Open browser
