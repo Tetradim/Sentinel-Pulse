@@ -238,41 +238,59 @@ export const useStore = create<BotState>((set) => ({
   setMarketOpen: (marketOpen) => set({ marketOpen }),
 
   tickers: {},
-  setTickers: (arr) => set({
-    tickers: arr.reduce((acc, t) => {
-      if (!t?.symbol) return acc; // skip invalid tickers
-      return { ...acc, [t.symbol]: t };
-    }, {} as Record<string, TickerConfig>)
-  }),
-  addTicker: (t) => set((state) => {
-    if (!t?.symbol) return state; // skip invalid tickers
-    return { tickers: { ...state.tickers, [t.symbol]: t } }
-  }),
-  updateTicker: (symbol, updates) => set((state) => {
-    const existing = state.tickers[symbol];
-    if (!existing) return state;
-    return { tickers: { ...state.tickers, [symbol]: { ...existing, ...updates } } };
-  }),
-  removeTicker: (symbol) => set((state) => {
-    const copy = { ...state.tickers };
-    delete copy[symbol];
-    return { tickers: copy };
-  }),
+  setTickers: (arr) => {
+    console.log('[STORE] setTickers:', arr?.map(t => t.symbol));
+    return set({
+      tickers: arr.reduce((acc, t) => {
+        if (!t?.symbol) return acc;
+        return { ...acc, [t.symbol]: t };
+      }, {} as Record<string, TickerConfig>)
+    });
+  },
+  addTicker: (t) => {
+    console.log('[STORE] addTicker:', t?.symbol);
+    return set((state) => {
+      if (!t?.symbol) return state;
+      return { tickers: { ...state.tickers, [t.symbol]: t } }
+    });
+  },
+  updateTicker: (symbol, updates) => {
+    console.log('[STORE] updateTicker:', symbol, updates);
+    return set((state) => {
+      const existing = state.tickers[symbol];
+      if (!existing) return state;
+      return { tickers: { ...state.tickers, [symbol]: { ...existing, ...updates } } };
+    });
+  },
+  removeTicker: (symbol) => {
+    console.log('[STORE] removeTicker:', symbol);
+    return set((state) => {
+      const copy = { ...state.tickers };
+      delete copy[symbol];
+      return { tickers: copy };
+    });
+  },
 
   prices: {},
-  setPrices: (prices) => set({ prices }),
+  setPrices: (prices) => {
+    console.log('[STORE] setPrices:', Object.keys(prices));
+    return set({ prices });
+  },
 
   priceHistory: {},
-  appendPriceHistory: (prices) => set((state) => {
-    const now = Date.now();
-    const updated = { ...state.priceHistory };
-    for (const [sym, price] of Object.entries(prices)) {
-      const arr = updated[sym] || [];
-      const next = [...arr, { time: now, price }];
-      updated[sym] = next.length > 120 ? next.slice(-120) : next;
-    }
-    return { priceHistory: updated };
-  }),
+  appendPriceHistory: (prices) => {
+    console.log('[STORE] appendPriceHistory:', Object.keys(prices));
+    return set((state) => {
+      const now = Date.now();
+      const updated = { ...state.priceHistory };
+      for (const [sym, price] of Object.entries(prices)) {
+        const arr = updated[sym] || [];
+        const next = [...arr, { time: now, price }];
+        updated[sym] = next.length > 120 ? next.slice(-120) : next;
+      }
+      return { priceHistory: updated };
+    });
+  },
 
   chartEnabled: {},
   toggleChart: (symbol) => set((state) => ({

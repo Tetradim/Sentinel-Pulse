@@ -5,14 +5,15 @@ import { useStore } from '@/stores/useStore';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 function getWsUrl(): string {
-  if (BACKEND_URL) {
-    const url = new URL(BACKEND_URL);
-    const proto = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${url.host}/api/ws`;
-  }
-  // Desktop mode: frontend served from same host as backend
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${window.location.host}/api/ws`;
+  const url = BACKEND_URL 
+    ? new URL(BACKEND_URL).host 
+    : `${window.location.host}`;
+  const proto = BACKEND_URL 
+    ? (new URL(BACKEND_URL).protocol === 'https:' ? 'wss:' : 'ws:')
+    : (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
+  const wsUrl = `${proto}//${url}/api/ws`;
+  console.log('[WS] getWsUrl:', wsUrl);
+  return wsUrl;
 }
 
 export function useWebSocket() {
@@ -27,6 +28,7 @@ export function useWebSocket() {
     socket.current = ws;
 
     ws.onopen = () => {
+      console.log('[WS] onopen - WebSocket connected');
       reconnectDelay.current = 3000; // Reset to 3s on successful connect
       store.setConnected(true);
     };
@@ -34,8 +36,11 @@ export function useWebSocket() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[WS] onmessage:', data.type, data);
 
         if (data.type === 'INITIAL_STATE') {
+          console.log('[WS] INITIAL_STATE - tickers:', data.tickers ? Object.keys(data.tickers) : 'none');
+          console.log('[WS] INITIAL_STATE - prices:', data.prices ? Object.keys(data.prices) : 'none');
           if (data.tickers) store.setTickers(data.tickers);
           if (data.prices) store.setPrices(data.prices);
           if (data.profits) store.setProfits(data.profits);
@@ -54,6 +59,8 @@ export function useWebSocket() {
         }
 
         if (data.type === 'PRICE_UPDATE') {
+          console.log('[WS] PRICE_UPDATE - prices:', data.prices ? Object.keys(data.prices) : 'none');
+          console.log('[WS] PRICE_UPDATE - sample price:', data.prices ? Object.values(data.prices).slice(0, 3) : 'none');
           if (data.prices) {
             store.setPrices(data.prices);
             store.appendPriceHistory(data.prices);
@@ -77,36 +84,44 @@ export function useWebSocket() {
         }
 
         if (data.type === 'TICKER_ADDED') {
+          console.log('[WS] TICKER_ADDED:', data.ticker?.symbol);
           store.addTicker(data.ticker);
         }
 
         if (data.type === 'TICKER_UPDATED') {
+          console.log('[WS] TICKER_UPDATED:', data.ticker?.symbol);
           store.updateTicker(data.ticker.symbol, data.ticker);
         }
 
         if (data.type === 'TICKER_DELETED') {
+          console.log('[WS] TICKER_DELETED:', data.symbol);
           store.removeTicker(data.symbol);
         }
 
         if (data.type === 'TICKERS_REORDERED') {
+          console.log('[WS] TICKERS_REORDERED:', data.tickers ? Object.keys(data.tickers) : 'none');
           if (data.tickers) store.setTickers(data.tickers);
         }
 
         if (data.type === 'ACCOUNT_UPDATE') {
+          console.log('[WS] ACCOUNT_UPDATE:', data);
           store.setAccountBalance(data.account_balance ?? 0, data.allocated ?? 0, data.available ?? 0);
         }
 
         if (data.type === 'BOT_STATUS') {
+          console.log('[WS] BOT_STATUS:', data);
           store.setRunning(data.running ?? store.running);
           store.setPaused(data.paused ?? store.paused);
         }
 
         if (data.type === 'MODE_SWITCH') {
+          console.log('[WS] MODE_SWITCH:', data);
           if (data.simulate_24_7 !== undefined) store.setSimulate247(data.simulate_24_7);
           if (data.trading_mode) store.setTradingMode(data.trading_mode);
         }
 
         if (data.type === 'BROKER_FAILED') {
+          console.log('[WS] BROKER_FAILED:', data);
           store.setBrokerFailed(data.broker_id, data.reason || 'Connection failed', data.symbol || '');
           // Auto-clear after 30 seconds
           setTimeout(() => {
@@ -118,14 +133,17 @@ export function useWebSocket() {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.log('[WS] onclose:', event.code, event.reason);
       store.setConnected(false);
       const delay = Math.min(reconnectDelay.current, 300000); // Cap at 5 minutes
       reconnectDelay.current = Math.min(reconnectDelay.current * 2, 300000); // Double each attempt
+      console.log('[WS] reconnect in:', delay, 'ms');
       reconnect.current = setTimeout(connect, delay);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (event) => {
+      console.error('[WS] onerror:', event);
       ws.close();
     };
   }, []);
@@ -139,8 +157,12 @@ export function useWebSocket() {
   }, [connect]);
 
   const send = useCallback((action: string, payload: Record<string, any> = {}) => {
+    const msg = { action, ...payload };
+    console.log('[WS] send:', action, payload);
     if (socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({ action, ...payload }));
+      socket.current.send(JSON.stringify(msg));
+    } else {
+      console.warn('[WS] send failed - socket not open:', socket.current?.readyState);
     }
   }, []);
 
