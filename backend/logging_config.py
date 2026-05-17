@@ -165,7 +165,6 @@ def setup_logging(
         handlers_added.append(('file', str(log_path)))
     except Exception as e:
         # Fallback: log to stderr in binary mode if file fails
-        import sys
         try:
             file_handler = logging.StreamHandler(sys.stderr)
             file_handler.setFormatter(
