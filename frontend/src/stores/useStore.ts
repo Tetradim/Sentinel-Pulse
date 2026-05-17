@@ -239,11 +239,15 @@ export const useStore = create<BotState>((set) => ({
 
   tickers: {},
   setTickers: (arr) => set({
-    tickers: arr.reduce((acc, t) => ({ ...acc, [t.symbol]: t }), {} as Record<string, TickerConfig>)
+    tickers: arr.reduce((acc, t) => {
+      if (!t?.symbol) return acc; // skip invalid tickers
+      return { ...acc, [t.symbol]: t };
+    }, {} as Record<string, TickerConfig>)
   }),
-  addTicker: (t) => set((state) => ({
-    tickers: { ...state.tickers, [t.symbol]: t }
-  })),
+  addTicker: (t) => set((state) => {
+    if (!t?.symbol) return state; // skip invalid tickers
+    return { tickers: { ...state.tickers, [t.symbol]: t } }
+  }),
   updateTicker: (symbol, updates) => set((state) => {
     const existing = state.tickers[symbol];
     if (!existing) return state;

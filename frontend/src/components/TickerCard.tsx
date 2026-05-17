@@ -18,6 +18,10 @@ interface Props {
 }
 
 export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunnelColor, cardSheen }: Props) {
+  // Defensive: guard against undefined ticker
+  if (!ticker || !ticker.symbol) {
+    return null;
+  }
   const { send }           = useWebSocket();
   const price              = useStore((s) => s.prices[ticker.symbol] ?? 0);
   const pnl                = useStore((s) => s.profits[ticker.symbol] ?? 0);

@@ -226,16 +226,20 @@ export function WatchlistTab() {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedSymbols} strategy={rectSortingStrategy}>
             <div className="sp-ticker-grid">
-              {sortedSymbols.map((symbol) => (
+              {sortedSymbols.map((symbol) => {
+                const t = tickers[symbol];
+                if (!t) return null; // skip invalid tickers
+                return (
                 <ErrorBoundary key={symbol} fallbackLabel={`${symbol} failed`}>
                   <TickerCard
-                    ticker={tickers[symbol]}
+                    ticker={t}
                     onConfigOpen={(s) => setConfigSymbol(s)}
                     tunnelColor={tunnelColor(symbol)}
                     cardSheen={cardSheen(symbol)}
                   />
                 </ErrorBoundary>
-              ))}
+                );
+              })}
 
               {/* Add ticker placeholder */}
               <div className="sp-add-ticker">
