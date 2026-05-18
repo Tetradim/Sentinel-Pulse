@@ -43,7 +43,7 @@ export function TunnelSVG({ color }: { color: 'gold' | 'red' | 'amber' | 'blue' 
       <rect x="182" y="0"   width="18" height="2" fill={c.frame} />
       <rect x="198" y="0"   width="2"  height="18" fill={c.frame} />
       {/* Readability overlay */}
-      <rect width="200" height="215" fill="rgba(4,2,8,0.38)" />
+      <rect width="200" height="215" fill="rgba(4,2,8,0.18)" />
     </svg>
   );
 }

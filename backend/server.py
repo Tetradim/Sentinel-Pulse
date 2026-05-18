@@ -64,7 +64,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 # Shared state (must be imported first — populates db, logger, etc.)
 import deps
-from schemas import TickerConfig
+from default_tickers import ensure_default_tickers
 from ws_manager import ConnectionManager
 from price_service import PriceService
 from trading_engine import TradingEngine
@@ -223,16 +223,9 @@ async def lifespan(application: FastAPI):
     except Exception as e:
         deps.logger.warning(f"Failed to create indexes: {e}")
 
-    # Seed defaults if empty
+    # Seed canonical defaults for fresh DBs and backfill legacy 3-ticker installs.
     try:
-        count = await deps.db.tickers.count_documents({})
-        if count == 0:
-            for sym in ["TSLA", "AAPL", "NVDA"]:
-                t = TickerConfig(symbol=sym, base_power=100.0)
-                await deps.db.tickers.update_one(
-                    {"symbol": sym}, {"$setOnInsert": t.model_dump()}, upsert=True
-                )
-            logger.info(f"Seeded default tickers: TSLA, AAPL, NVDA")
+        await ensure_default_tickers(deps.db, logger)
     except Exception as e:
         deps.logger.warning(f"Failed to seed defaults: {e}")
 

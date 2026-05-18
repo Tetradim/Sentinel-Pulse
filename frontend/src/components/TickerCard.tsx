@@ -3,7 +3,7 @@ import { useStore, TickerConfig } from '@/stores/useStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { Switch } from '@/components/ui/switch';
 import { apiFetch } from '@/lib/api';
-import { Trash2, TrendingUp, TrendingDown, Zap, Banknote, GripVertical, Settings2, Copy } from 'lucide-react';
+import { AlertTriangle, Banknote, GripVertical, Pause, Play, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -38,22 +38,17 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
   const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
   const resizeRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
-  const [lastClickTime, setLastClickTime] = useState(0);
 
   useEffect(() => {
     setEditVals({ buy: ticker.buy_offset, sell: ticker.sell_offset, stop: ticker.stop_offset });
   }, [ticker.buy_offset, ticker.sell_offset, ticker.stop_offset]);
 
-  // Handle click vs double-click properly
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const now = Date.now();
-    if (now - lastClickTime < 300) {
-      // Double click - open config
-      e.preventDefault();
-      onConfigOpen(ticker.symbol);
-    }
-    setLastClickTime(now);
-  }, [lastClickTime, onConfigOpen, ticker.symbol]);
+  const handleCardDoubleClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, select, textarea, [role="button"]')) return;
+    e.preventDefault();
+    onConfigOpen(ticker.symbol);
+  }, [onConfigOpen, ticker.symbol]);
 
   // Resize handlers
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -82,6 +77,20 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  const handleResizeKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? 25 : 10;
+    if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    setCardSize((current) => {
+      const width = current.width || resizeRef.current?.offsetWidth || 0;
+      const height = current.height || resizeRef.current?.offsetHeight || 0;
+      if (e.key === 'ArrowRight') return { width: Math.max(200, width + step), height };
+      if (e.key === 'ArrowLeft') return { width: Math.max(200, width - step), height };
+      if (e.key === 'ArrowDown') return { width, height: Math.max(215, height + step) };
+      return { width, height: Math.max(215, height - step) };
+    });
   }, []);
 
   const isActive   = ticker.enabled;
@@ -180,7 +189,7 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
       }}
       className={cardClass}
       data-testid={`ticker-card-${ticker.symbol}`}
-      onClick={handleClick}
+      onDoubleClick={handleCardDoubleClick}
     >
       {/* Sci-fi tunnel background */}
       <div className="sp-ticker-tunnel">
@@ -190,7 +199,8 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
       {/* Auto-stopped banner */}
       {ticker.auto_stopped && (
         <div style={{ position:'relative', zIndex:6, background:'rgba(240,80,96,0.12)', borderBottom:'1px solid rgba(240,80,96,0.2)', padding:'3px 10px', fontSize:9, letterSpacing:'.12em', color:'#f05060', fontFamily:"'JetBrains Mono',monospace", textTransform:'uppercase' }}>
-          ⚠ Auto-stopped — {ticker.auto_stop_reason || 'Risk limit hit'}
+          <AlertTriangle size={10} aria-hidden="true" style={{ display: 'inline', marginRight: 4, verticalAlign: '-1px' }} />
+          Auto-stopped — {ticker.auto_stop_reason || 'Risk limit hit'}
         </div>
       )}
 
@@ -199,7 +209,9 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
         <button
           {...attributes}
           {...listeners}
+          type="button"
           style={{ background:'none', border:'none', cursor:'grab', color:'rgba(200,145,10,0.25)', padding:0, display:'flex', alignItems:'center', position:'relative', zIndex:1 }}
+          aria-label={`Drag ${ticker.symbol} card`}
           data-testid={`drag-handle-${ticker.symbol}`}
         >
           <GripVertical size={13} />
@@ -255,12 +267,12 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
             <div className="sp-bracket-lbl">Buy</div>
             {quickEdit.buy ? (
               <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-                <input type="number" value={editVals.buy} onChange={(e) => setEditVals(v => ({ ...v, buy: parseFloat(e.target.value)||0 }))} style={{ width:52, padding:'1px 4px', background:'#1c1c24', border:'1px solid rgba(220,168,40,0.3)', borderRadius:3, fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:'#f0ead6', outline:'none' }} autoFocus />
-                <button onClick={() => saveQuickEdit('buy_offset', editVals.buy)} style={{ color:'#dca828', background:'none', border:'none', cursor:'pointer', fontSize:11 }}>✓</button>
-                <button onClick={() => setQuickEdit(v => ({ ...v, buy:false }))} style={{ color:'rgba(255,255,255,0.3)', background:'none', border:'none', cursor:'pointer', fontSize:13 }}>×</button>
+                <input aria-label={`Buy offset for ${ticker.symbol}`} type="number" value={editVals.buy} onChange={(e) => setEditVals(v => ({ ...v, buy: parseFloat(e.target.value)||0 }))} style={{ width:52, padding:'1px 4px', background:'#1c1c24', border:'1px solid rgba(220,168,40,0.3)', borderRadius:3, fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:'#f0ead6' }} autoFocus />
+                <button type="button" aria-label={`Save buy offset for ${ticker.symbol}`} onClick={() => saveQuickEdit('buy_offset', editVals.buy)} style={{ color:'#dca828', background:'none', border:'none', cursor:'pointer', fontSize:11 }}>✓</button>
+                <button type="button" aria-label={`Cancel buy offset edit for ${ticker.symbol}`} onClick={() => setQuickEdit(v => ({ ...v, buy:false }))} style={{ color:'rgba(255,255,255,0.3)', background:'none', border:'none', cursor:'pointer', fontSize:13 }}>×</button>
               </div>
             ) : (
-              <button className="sp-bracket-val buy" style={{ background:'none', border:'none', cursor:'pointer', padding:0 }} onClick={() => setQuickEdit(v => ({ ...v, buy:true }))}>
+              <button type="button" aria-label={`Edit buy offset for ${ticker.symbol}`} className="sp-bracket-val buy" style={{ background:'none', border:'none', cursor:'pointer', padding:0 }} onClick={() => setQuickEdit(v => ({ ...v, buy:true }))}>
                 {ticker.buy_percent ? `${ticker.buy_offset}%` : `$${ticker.buy_offset}`}
               </button>
             )}
@@ -269,12 +281,12 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
             <div className="sp-bracket-lbl">Sell</div>
             {quickEdit.sell ? (
               <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-                <input type="number" value={editVals.sell} onChange={(e) => setEditVals(v => ({ ...v, sell: parseFloat(e.target.value)||0 }))} style={{ width:52, padding:'1px 4px', background:'#1c1c24', border:'1px solid rgba(220,168,40,0.3)', borderRadius:3, fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:'#f0ead6', outline:'none' }} autoFocus />
-                <button onClick={() => saveQuickEdit('sell_offset', editVals.sell)} style={{ color:'#dca828', background:'none', border:'none', cursor:'pointer', fontSize:11 }}>✓</button>
-                <button onClick={() => setQuickEdit(v => ({ ...v, sell:false }))} style={{ color:'rgba(255,255,255,0.3)', background:'none', border:'none', cursor:'pointer', fontSize:13 }}>×</button>
+                <input aria-label={`Sell offset for ${ticker.symbol}`} type="number" value={editVals.sell} onChange={(e) => setEditVals(v => ({ ...v, sell: parseFloat(e.target.value)||0 }))} style={{ width:52, padding:'1px 4px', background:'#1c1c24', border:'1px solid rgba(220,168,40,0.3)', borderRadius:3, fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:'#f0ead6' }} autoFocus />
+                <button type="button" aria-label={`Save sell offset for ${ticker.symbol}`} onClick={() => saveQuickEdit('sell_offset', editVals.sell)} style={{ color:'#dca828', background:'none', border:'none', cursor:'pointer', fontSize:11 }}>✓</button>
+                <button type="button" aria-label={`Cancel sell offset edit for ${ticker.symbol}`} onClick={() => setQuickEdit(v => ({ ...v, sell:false }))} style={{ color:'rgba(255,255,255,0.3)', background:'none', border:'none', cursor:'pointer', fontSize:13 }}>×</button>
               </div>
             ) : (
-              <button className="sp-bracket-val sell" style={{ background:'none', border:'none', cursor:'pointer', padding:0 }} onClick={() => setQuickEdit(v => ({ ...v, sell:true }))}>
+              <button type="button" aria-label={`Edit sell offset for ${ticker.symbol}`} className="sp-bracket-val sell" style={{ background:'none', border:'none', cursor:'pointer', padding:0 }} onClick={() => setQuickEdit(v => ({ ...v, sell:true }))}>
                 {ticker.sell_percent ? `${ticker.sell_offset}%` : `$${ticker.sell_offset}`}
               </button>
             )}
@@ -296,22 +308,26 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
           {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}
         </div>
         <div className="sp-card-btns">
-          <button className="sp-card-btn" title="Configure" onClick={() => onConfigOpen(ticker.symbol)}>
+          <button type="button" className="sp-card-btn" title="Configure" aria-label={`Configure ${ticker.symbol}`} onClick={() => onConfigOpen(ticker.symbol)}>
             <Settings2 size={11} />
           </button>
           <button
+            type="button"
             className="sp-card-btn"
+            aria-label={`${isActive ? 'Pause' : 'Resume'} ${ticker.symbol}`}
             title={isActive ? 'Pause' : 'Resume'}
             onClick={() => send('UPDATE_TICKER', { symbol: ticker.symbol, enabled: !isActive })}
           >
             {isActive
-              ? <span style={{ fontSize:10 }}>⏸</span>
-              : <span style={{ fontSize:10 }}>▶</span>
+              ? <Pause size={11} aria-hidden="true" />
+              : <Play size={11} aria-hidden="true" />
             }
           </button>
           {pnl !== 0 && (
             <button
+              type="button"
               className="sp-card-btn"
+              aria-label={confirmTP ? `Confirm take profit for ${ticker.symbol}` : `Take profit for ${ticker.symbol}`}
               title={confirmTP ? `Take $${pnl.toFixed(2)}?` : 'Take Profit'}
               onClick={handleTakeProfit}
               style={confirmTP ? { color:'#dca828', borderColor:'rgba(220,168,40,0.4)' } : {}}
@@ -320,7 +336,9 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
             </button>
           )}
           <button
+            type="button"
             className="sp-card-btn"
+            aria-label={confirmDelete ? `Confirm remove ${ticker.symbol}` : `Remove ${ticker.symbol}`}
             title={confirmDelete ? 'Confirm?' : 'Remove'}
             onClick={handleDelete}
             style={confirmDelete ? { color:'#f05060', borderColor:'rgba(240,80,96,0.35)' } : {}}
@@ -331,9 +349,13 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
       </div>
 
       {/* Resize handle - drag to resize */}
-      <div 
-        className="sp-resize-handle" 
+      <div
+        className="sp-resize-handle"
+        role="separator"
+        tabIndex={0}
+        aria-label={`Resize ${ticker.symbol} card. Use arrow keys to resize.`}
         onMouseDown={handleResizeStart}
+        onKeyDown={handleResizeKeyDown}
         style={{ cursor: isResizing ? 'grabbing' : 'se-resize' }}
       />
     </div>

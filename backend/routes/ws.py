@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 import deps
+from default_tickers import ensure_default_tickers
 from schemas import TickerConfig
 from strategies import PRESET_STRATEGIES
 
@@ -20,17 +21,8 @@ async def ws_endpoint(websocket: WebSocket):
     try:
         tickers = await deps.db.tickers.find({}, {"_id": 0}).to_list(100)
         
-        # Seed default tickers if none exist (always, not just demo mode)
-        if not tickers:
-            defaults = [
-                TickerConfig(symbol="SPY", base_power=100.0, market="US"),
-                TickerConfig(symbol="QQQ", base_power=100.0, market="US"),
-                TickerConfig(symbol="AAPL", base_power=100.0, market="US"),
-                TickerConfig(symbol="NVDA", base_power=100.0, market="US"),
-            ]
-            for t in defaults:
-                doc = t.model_dump()
-                await deps.db.tickers.insert_one(doc)
+        # Startup owns the normal seed path; this is a safety net for direct WS use.
+        if await ensure_default_tickers(deps.db, logger):
             tickers = await deps.db.tickers.find({}, {"_id": 0}).to_list(100)
         prices = {}
         for t in tickers:
