@@ -115,8 +115,11 @@ export function Dashboard() {
             return (
               <button
                 key={item.id}
+                type="button"
                 className={`sp-sb-btn ${activeTab === item.id ? 'active' : ''}`}
                 title={item.title}
+                aria-label={`Open ${item.title} tab`}
+                aria-current={activeTab === item.id ? 'page' : undefined}
                 onClick={() => setActiveTab(item.id!)}
                 data-testid={`sidebar-${item.id}`}
               >
@@ -126,10 +129,23 @@ export function Dashboard() {
           })}
           <div className="sp-sb-spacer" />
           <div className="sp-sb-divider" />
-          <button className="sp-sb-btn" title="Alerts"><Bell size={17} /></button>
           <button
+            type="button"
+            className={`sp-sb-btn ${activeTab === 'incidents' ? 'active' : ''}`}
+            title="Alerts"
+            aria-label="Open Incidents and alerts tab"
+            aria-current={activeTab === 'incidents' ? 'page' : undefined}
+            onClick={() => setActiveTab('incidents')}
+            data-testid="sidebar-alerts"
+          >
+            <Bell size={17} />
+          </button>
+          <button
+            type="button"
             className={`sp-sb-btn ${activeTab === 'settings' ? 'active' : ''}`}
             title="Settings"
+            aria-label="Open Settings tab"
+            aria-current={activeTab === 'settings' ? 'page' : undefined}
             onClick={() => setActiveTab('settings')}
           >
             <Settings size={17} />
@@ -141,7 +157,7 @@ export function Dashboard() {
 
           {/* Tab bar */}
           <div className="sp-tabbar scrollbar-hide" data-testid="tab-bar">
-            <button className="sp-tab-scr" onClick={() => scrollTabs('left')} title="Scroll left">
+            <button type="button" className="sp-tab-scr" onClick={() => scrollTabs('left')} title="Scroll left" aria-label="Scroll tabs left">
               <ChevronLeft size={13} />
             </button>
 
@@ -164,7 +180,9 @@ export function Dashboard() {
                       />
                     )}
                     <button
+                      type="button"
                       className={`sp-tab ${isActive ? 'active' : ''}`}
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => setActiveTab(tab.id)}
                       data-testid={`tab-${tab.id}`}
                     >
@@ -176,7 +194,7 @@ export function Dashboard() {
               })}
             </nav>
 
-            <button className="sp-tab-scr" onClick={() => scrollTabs('right')} title="Scroll right">
+            <button type="button" className="sp-tab-scr" onClick={() => scrollTabs('right')} title="Scroll right" aria-label="Scroll tabs right">
               <ChevronRight size={13} />
             </button>
           </div>
@@ -187,7 +205,7 @@ export function Dashboard() {
             style={{ padding: '14px 16px' }}
             data-testid="tab-content"
           >
-            <ErrorBoundary fallbackLabel="Tab failed to render">
+            <ErrorBoundary key={activeTab} fallbackLabel={`Tab "${activeTab}" failed to render`}>
               {activeTab === 'watchlist'      && <WatchlistTab />}
               {activeTab === 'portfolio'      && <PortfolioTab />}
               {activeTab === 'positions'      && <PositionsTab />}

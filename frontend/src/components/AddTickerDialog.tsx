@@ -84,6 +84,7 @@ export function AddTickerDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button
+          type="button"
           data-testid="add-ticker-btn"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all"
         >
@@ -100,12 +101,15 @@ export function AddTickerDialog() {
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           {/* Symbol */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
+            <label htmlFor="ticker-symbol-input" className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
               Symbol
             </label>
             <input
+              id="ticker-symbol-input"
               data-testid="ticker-symbol-input"
               required
+              aria-invalid={!!error}
+              aria-describedby={error ? 'add-ticker-error' : undefined}
               value={symbol}
               onChange={(e) => handleSymbolChange(e.target.value)}
               placeholder={`e.g. ${selectedMarket.hint}`}
@@ -115,11 +119,12 @@ export function AddTickerDialog() {
 
           {/* Market selector */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
+            <label htmlFor="ticker-market-select" className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
               Exchange / Market
             </label>
             <div className="relative">
               <select
+                id="ticker-market-select"
                 data-testid="ticker-market-select"
                 value={market}
                 onChange={(e) => setMarket(e.target.value)}
@@ -142,12 +147,18 @@ export function AddTickerDialog() {
 
           {/* Buy power */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
+            <label htmlFor="ticker-power-input" className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">
               Buy Power ($)
             </label>
             <input
+              id="ticker-power-input"
               data-testid="ticker-power-input"
               type="number"
+              min={1}
+              max={1000000}
+              step={1}
+              inputMode="numeric"
+              aria-invalid={!!error}
               value={basePower}
               onChange={(e) => { setBasePower(Number(e.target.value)); setError(''); }}
               className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
@@ -170,7 +181,7 @@ export function AddTickerDialog() {
             )}
           </div>
 
-          {error && <p className="text-xs text-red-400" data-testid="add-ticker-error">{error}</p>}
+          {error && <p id="add-ticker-error" className="text-xs text-red-400" role="alert" data-testid="add-ticker-error">{error}</p>}
 
           <button
             type="submit"

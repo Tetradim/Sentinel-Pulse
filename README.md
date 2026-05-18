@@ -32,7 +32,7 @@ Trade the same ticker across multiple broker accounts simultaneously with indepe
 - **MongoDB Detection Fix**: Windows launcher now checks for system MongoDB on port 27017 before failing when bundled mongod.exe is missing.
 - **Card Color Picker**: Improved color picker with higher z-index and better visibility.
 - **Theme Contrast**: Adjusted dark theme colors for less harsh contrast.
-- **Default Tickers**: No longer auto-populates default tickers - users must add tickers manually.
+- **Default Tickers**: Startup and WebSocket fallback share the same canonical defaults (SPY, QQQ, AAPL, NVDA), with legacy 3-ticker installs backfilled safely.
 
 ---
 

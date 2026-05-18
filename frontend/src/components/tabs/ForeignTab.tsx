@@ -54,7 +54,7 @@ export function ForeignTab() {
       const data = await apiFetch('/api/markets');
       console.log('[ForeignTab] markets API response:', data);
       const map: Record<string, MarketInfo> = {};
-      for (const m of data.markets) {
+      for (const m of (data?.markets ?? [])) {
         map[m.code] = m;
       }
       console.log('[ForeignTab] loaded markets:', Object.keys(map));
@@ -217,7 +217,8 @@ function MarketPanel({
   fxRates: Record<string, number>;
   currencyDisplay: 'usd' | 'native';
 }) {
-  const fxRate = fxRates[market.currency];
+  const fxRate = fxRates?.[market.currency];
+  const tickerExamples = Array.isArray(market.ticker_examples) ? market.ticker_examples : [];
 
   const statusStyle =
     market.status === 'open'
@@ -278,7 +279,7 @@ function MarketPanel({
             <TrendingUp size={11} /> Example Tickers
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {market.ticker_examples.map((sym) => (
+            {tickerExamples.map((sym) => (
               <span
                 key={sym}
                 className="text-xs font-mono bg-secondary/60 border border-border px-2.5 py-1 rounded-lg text-foreground cursor-default select-all"
