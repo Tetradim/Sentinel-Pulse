@@ -9,6 +9,14 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getMarketMeta, formatPrice } from '@/lib/market-utils';
 import { TunnelSVG } from './TunnelSVG';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface Props {
   ticker: TickerConfig;
@@ -50,22 +58,57 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
     onConfigOpen(ticker.symbol);
   }, [onConfigOpen, ticker.symbol]);
 
-  // Resize handlers
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+  // Enhanced resize - supports 8 directions + optional snap-to-grid + Windows-like move
+  const handleResizeStart = useCallback((e: React.MouseEvent, direction: 'n'|'s'|'e'|'w'|'ne'|'nw'|'se'|'sw'|'move') => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
     const startX = e.clientX;
     const startY = e.clientY;
-    const startWidth = resizeRef.current?.offsetWidth || 0;
-    const startHeight = resizeRef.current?.offsetHeight || 0;
+    const startWidth = resizeRef.current?.offsetWidth || 200;
+    const startHeight = resizeRef.current?.offsetHeight || 215;
+    const startLeft = resizeRef.current?.offsetLeft || 0;
+    const startTop = resizeRef.current?.offsetTop || 0;
+    
+    // Optional snap grid size
+    const SNAP_GRID = 10;
+    const snapToGrid = (value: number) => Math.round(value / SNAP_GRID) * SNAP_GRID;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!resizeRef.current) return;
-      const newWidth = startWidth + (moveEvent.clientX - startX);
-      const newHeight = startHeight + (moveEvent.clientY - startY);
-      if (newWidth >= 200 && newHeight >= 215) {
-        setCardSize({ width: newWidth, height: newHeight });
+      
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      let newLeft = startLeft;
+      let newTop = startTop;
+      
+      if (direction.includes('e')) {
+        newWidth = startWidth + deltaX;
+      }
+      if (direction.includes('w')) {
+        newWidth = startWidth - deltaX;
+        newLeft = startLeft + deltaX;
+      }
+      if (direction.includes('s')) {
+        newHeight = startHeight + deltaY;
+      }
+      if (direction.includes('n')) {
+        newHeight = startHeight - deltaY;
+        newTop = startTop + deltaY;
+      }
+      
+      // Apply minimum constraints
+      if (newWidth >= 200) {
+        // Snap-to-grid when shift held (Windows-like behavior)
+        const finalWidth = e.shiftKey ? snapToGrid(newWidth) : newWidth;
+        setCardSize(prev => ({ ...prev, width: finalWidth }));
+      }
+      if (newHeight >= 215) {
+        const finalHeight = e.shiftKey ? snapToGrid(newHeight) : newHeight;
+        setCardSize(prev => ({ ...prev, height: finalHeight }));
       }
     };
 
@@ -165,6 +208,25 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
   const sparkColor = isPositive ? '#2dd4a0' : '#e03040';
   const sparkId    = `spark-${ticker.symbol}`;
 
+  // Build chart data from price history
+  const chartData = (() => {
+    if (priceHistory.length < 2) return [];
+    return priceHistory.slice(-120).map((p) => ({
+      time: p.time,
+      price: p.price,
+    }));
+  })();
+
+  // Min/max for YAxis domain
+  const chartDomain = (() => {
+    if (chartData.length === 0) return [0, 1];
+    const prices = chartData.map((d) => d.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const padding = (max - min) * 0.1 || 1;
+    return [min - padding, max + padding];
+  })();
+
   // Sheen class based on mode
   const modeSheen = (() => {
     if (!isActive) return 'sp-sheen-amber';
@@ -243,23 +305,59 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
           )}
         </div>
 
-        {/* Sparkline */}
-        <svg className="sp-sparkline" viewBox="0 0 180 26" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor={sparkColor} stopOpacity={0.25} />
-              <stop offset="100%" stopColor={sparkColor} stopOpacity={0}    />
-            </linearGradient>
-          </defs>
-          {sparkPoints ? (
-            <>
-              <polyline points={sparkPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" />
-              <polyline points={`${sparkPoints} 180,26 0,26`} fill={`url(#${sparkId})`} />
-            </>
-          ) : (
-            <line x1="0" y1="13" x2="180" y2="13" stroke={sparkColor} strokeWidth="1" strokeOpacity="0.2" strokeDasharray="4 3" />
-          )}
-        </svg>
+        {/* Chart - Recharts AreaChart for price history */}
+        {chartData.length >= 2 ? (
+          <div className="sp-chart-container" style={{ width: '100%', height: 60 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+                <defs>
+                  <linearGradient id={`chartGrad-${ticker.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={sparkColor} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={sparkColor} stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" hide />
+                <YAxis domain={chartDomain} hide />
+                <Tooltip
+                  contentStyle={{
+                    background: '#1a1a24',
+                    border: '1px solid rgba(220,168,40,0.3)',
+                    borderRadius: 4,
+                    fontSize: 11,
+                  }}
+                  labelStyle={{ display: 'none' }}
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={sparkColor}
+                  strokeWidth={1.5}
+                  fill={`url(#chartGrad-${ticker.symbol})`}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          /* Fallback when insufficient data - show sparkline */
+          <svg className="sp-sparkline" viewBox="0 0 180 26" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={sparkColor} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={sparkColor} stopOpacity={0}    />
+              </linearGradient>
+            </defs>
+            {sparkPoints ? (
+              <>
+                <polyline points={sparkPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round" />
+                <polyline points={`${sparkPoints} 180,26 0,26`} fill={`url(#${sparkId})`} />
+              </>
+            ) : (
+              <line x1="0" y1="13" x2="180" y2="13" stroke={sparkColor} strokeWidth="1" strokeOpacity="0.2" strokeDasharray="4 3" />
+            )}
+          </svg>
+        )}
 
         {/* Buy / Sell brackets — quick editable */}
         <div className="sp-bracket-row">
@@ -348,15 +446,27 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
         </div>
       </div>
 
-      {/* Resize handle - drag to resize */}
+      {/* Multi-directional resize handles - Windows-like resizing */}
+      {/* Corner handles */}
+      <div className="sp-resize-handle se" role="separator" aria-label="Resize SE" onMouseDown={(e) => handleResizeStart(e, 'se')} style={{ cursor: 'se-resize', position: 'absolute', right: 0, bottom: 0, width: 12, height: 12 }} />
+      <div className="sp-resize-handle sw" role="separator" aria-label="Resize SW" onMouseDown={(e) => handleResizeStart(e, 'sw')} style={{ cursor: 'sw-resize', position: 'absolute', left: 0, bottom: 0, width: 12, height: 12 }} />
+      <div className="sp-resize-handle ne" role="separator" aria-label="Resize NE" onMouseDown={(e) => handleResizeStart(e, 'ne')} style={{ cursor: 'ne-resize', position: 'absolute', right: 0, top: 0, width: 12, height: 12 }} />
+      <div className="sp-resize-handle nw" role="separator" aria-label="Resize NW" onMouseDown={(e) => handleResizeStart(e, 'nw')} style={{ cursor: 'nw-resize', position: 'absolute', left: 0, top: 0, width: 12, height: 12 }} />
+      
+      {/* Edge handles */}
+      <div className="sp-resize-handle e" role="separator" aria-label="Resize East" onMouseDown={(e) => handleResizeStart(e, 'e')} style={{ cursor: 'e-resize', position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 8, height: 40 }} />
+      <div className="sp-resize-handle w" role="separator" aria-label="Resize West" onMouseDown={(e) => handleResizeStart(e, 'w')} style={{ cursor: 'w-resize', position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 8, height: 40 }} />
+      <div className="sp-resize-handle s" role="separator" aria-label="Resize South" onMouseDown={(e) => handleResizeStart(e, 's')} style={{ cursor: 's-resize', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 40, height: 8 }} />
+      <div className="sp-resize-handle n" role="separator" aria-label="Resize North" onMouseDown={(e) => handleResizeStart(e, 'n')} style={{ cursor: 'n-resize', position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 40, height: 8 }} />
+      
+      {/* Keyboard accessible resize handle (alternative) */}
       <div
-        className="sp-resize-handle"
+        className="sp-resize-handle-keyboard"
         role="separator"
         tabIndex={0}
         aria-label={`Resize ${ticker.symbol} card. Use arrow keys to resize.`}
-        onMouseDown={handleResizeStart}
         onKeyDown={handleResizeKeyDown}
-        style={{ cursor: isResizing ? 'grabbing' : 'se-resize' }}
+        style={{ position: 'absolute', right: 4, bottom: 4, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
       />
     </div>
   );

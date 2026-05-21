@@ -49,7 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         </div>
       );
     }
-    // Force remount with key on retry
-    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>;
+    // Use a div wrapper with key to properly force remount on retry
+    return <div key={this.state.retryKey}>{this.props.children}</div>;
   }
 }

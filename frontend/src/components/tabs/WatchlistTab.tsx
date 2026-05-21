@@ -107,7 +107,10 @@ export function WatchlistTab() {
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const symbols = Object.values(tickers)
+    
+    // Get fresh tickers from store instead of closure
+    const currentTickers = useStore.getState().tickers;
+    const symbols = Object.values(currentTickers)
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((t) => t.symbol);
     const from = symbols.indexOf(active.id as string);
@@ -118,7 +121,7 @@ export function WatchlistTab() {
     try {
       await apiFetch('/api/tickers/reorder', { method: 'POST', body: JSON.stringify({ symbols: reordered }) });
     } catch { toast.error('Failed to reorder tickers'); }
-  }, [tickers]);
+  }, []); // Empty deps - gets fresh state internally
 
   const sortedSymbols = Object.values(tickers)
     .sort((a, b) => a.sort_order - b.sort_order)
