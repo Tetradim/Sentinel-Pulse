@@ -4,17 +4,36 @@
 # - "One Closes All" (close browser OR console kills all)
 # - Auto-restart on crash (configurable, persisted)
 # - Extensive error logging
+# Auto-detects project location
 # ============================================================
 
 param(
     [string]$MongoPath = "C:\Program Files\MongoDB\Server\8.2\bin",
-    [string]$DataPath = "C:\data\db",
-    [string]$LogPath = "logs",
-    [string]$SettingsPath = "launcher-settings.ini",
+    [string]$DataPath = "",
+    [string]$LogPath = "",
+    [string]$SettingsPath = "",
     [int]$Port = 27017,
     [int]$AppPort = 8002,
-    [switch]$SkipSettings  # Skip loading settings (for first run)
+    [switch]$SkipSettings
 )
+
+$ErrorActionPreference = "SilentlyContinue"
+
+# Auto-detect project directory
+$script:ProjectRoot = $PSScriptRoot
+if (-not $script:ProjectRoot) { 
+    $script:ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path 
+}
+if (-not $script:ProjectRoot) { 
+    $script:ProjectRoot = Get-Location 
+}
+
+# Apply defaults using detected project root
+if (-not $DataPath) { $DataPath = "$script:ProjectRoot\data\db" }
+if (-not $LogPath) { $LogPath = "$script:ProjectRoot\logs" }
+if (-not $SettingsPath) { $SettingsPath = "$script:ProjectRoot\launcher-settings.ini" }
+
+Write-Host "[INFO] Project root: $script:ProjectRoot" -ForegroundColor Cyan
 
 $ErrorActionPreference = "SilentlyContinue"
 

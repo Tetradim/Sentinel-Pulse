@@ -1,17 +1,33 @@
 # ============================================================
 # Sentinel Pulse Launcher v2
 # "One Closes All" Feature - closing Browser OR Console kills everything
+# Auto-detects project location
 # ============================================================
 
 param(
     [string]$MongoPath = "C:\Program Files\MongoDB\Server\8.2\bin",
-    [string]$DataPath = "C:\data\db",
-    [string]$LogPath = "logs",
+    [string]$DataPath = "",  # auto-detected below
+    [string]$LogPath = "",
     [int]$Port = 27017,
     [int]$AppPort = 8002
 )
 
 $ErrorActionPreference = "SilentlyContinue"
+
+# Auto-detect project directory  
+$script:ProjectRoot = $PSScriptRoot
+if (-not $script:ProjectRoot) { 
+    $script:ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path 
+}
+if (-not $script:ProjectRoot) { 
+    $script:ProjectRoot = Get-Location 
+}
+
+# Apply defaults
+if (-not $DataPath) { $DataPath = "$script:ProjectRoot\data\db" }
+if (-not $LogPath) { $LogPath = "$script:ProjectRoot\logs" }
+
+Write-Host "[INFO] Project root: $script:ProjectRoot" -ForegroundColor Cyan
 
 # Global PIDs for cross-termination
 $script:MongoPID = $null
