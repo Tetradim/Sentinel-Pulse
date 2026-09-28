@@ -103,9 +103,6 @@ async def test_broker_connection(broker_id: str, body: BrokerTestRequest):
             val = creds.get(field, "")
             if val and len(val) < 10:
                 format_issues.append(f"'{field}' appears too short — get keys from https://app.alpaca.markets")
-        paper = creds.get("paper", "")
-        if paper and paper.lower() not in ("true", "false", "1", "0", "yes", "no"):
-            format_issues.append("'paper' must be true/false (true for paper trading, false for live)")
     if broker_id == "td_ameritrade":
         for field in ["client_id", "refresh_token"]:
             val = creds.get(field, "")

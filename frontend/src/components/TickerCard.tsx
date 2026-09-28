@@ -145,16 +145,14 @@ export const TickerCard = memo(function TickerCard({ ticker, onConfigOpen, tunne
     zIndex:     isDragging ? 50 : undefined,
   };
 
-  // Sheen class based on mode
   const modeSheen = (() => {
     if (!isActive) return 'sp-sheen-amber';
-    if (ticker.strategy === 'paper') return 'sp-sheen-blue';
     if (!isPositive) return 'sp-sheen-red';
     return cardSheen;
   })();
 
-  const modeLabel = !isActive ? 'PAUSED' : ticker.strategy === 'paper' ? 'PAPER' : 'LIVE';
-  const modeClass = !isActive ? 'sp-mode-paused' : ticker.strategy === 'paper' ? 'sp-mode-paper' : 'sp-mode-live';
+  const modeLabel = !isActive ? 'PAUSED' : 'LIVE';
+  const modeClass = !isActive ? 'sp-mode-paused' : 'sp-mode-live';
 
   return (
     <div

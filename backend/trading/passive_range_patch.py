@@ -108,10 +108,6 @@ def _order_result(broker_id: str, value: Any) -> dict:
     return result
 
 
-def _is_paper(self, ticker_doc: dict) -> bool:
-    return False
-
-
 async def _load_state(self, symbol: str) -> dict:
     states = getattr(self, "_passive_range_states", None)
     if states is None:
@@ -589,10 +585,9 @@ async def _expire_working_buy(
     ttl = int(ticker_doc.get("passive_order_ttl_seconds", 300) or 0)
     if ttl <= 0 or _elapsed_seconds(order.get("submitted_at")) < ttl:
         return False
-    if not _is_paper(self, ticker_doc):
-        broker_id, _ = _active_broker(ticker_doc)
-        if not broker_id or not await _cancel_live_order(self, broker_id, order):
-            return False
+    broker_id, _ = _active_broker(ticker_doc)
+    if not broker_id or not await _cancel_live_order(self, broker_id, order):
+        return False
     state.update({"phase": "IDLE", "buy_order": None, "touch_count": 0})
     await _persist_state(self, state)
     return True
@@ -646,7 +641,7 @@ async def _evaluate_passive_range(self, ticker_doc: dict) -> None:
     broker_id, broker_allocation = _active_broker(ticker_doc)
     effective_power = broker_allocation if broker_id else _number(ticker_doc.get("base_power", 100))
 
-    if not _is_paper(self, ticker_doc) and not broker_id:
+    if not broker_id:
         deps.logger.error(
             "Passive range live mode for %s requires exactly one positively allocated broker",
             symbol,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FlaskConical, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Loader2, Plug, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 
@@ -35,7 +35,6 @@ const FIELD_LABELS: Record<string, string> = {
   email: 'Email',
   api_key: 'API Key',
   api_secret: 'API Secret',
-  paper: 'Paper Trading (true/false)',
   gateway_url: 'TWS/Gateway URL',
   account_id: 'Account ID',
   client_id: 'Client ID (Schwab App Key)',
@@ -104,7 +103,7 @@ export function TestConnectionModal({ broker, onClose, onConnected }: { broker: 
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div>
             <h2 className="text-sm font-semibold text-foreground">Test Connection — {broker.name}</h2>
-            <p className="text-[10px] text-muted-foreground">Full credential validation dry-run</p>
+            <p className="text-[10px] text-muted-foreground">Full credential validation against broker API</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="broker-test-close-btn">
             <X size={16} />
@@ -141,7 +140,7 @@ export function TestConnectionModal({ broker, onClose, onConnected }: { broker: 
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20"
             data-testid="broker-test-run-btn"
           >
-            {testing ? <><Loader2 size={13} className="animate-spin" /> Testing...</> : <><FlaskConical size={13} /> Run Test</>}
+            {testing ? <><Loader2 size={13} className="animate-spin" /> Validating...</> : <><Plug size={13} /> Validate</>}
           </button>
 
           {result && (

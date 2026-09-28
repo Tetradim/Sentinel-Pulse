@@ -183,8 +183,6 @@ function SellModal({ position, onClose, onComplete }: {
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [limitPrice, setLimitPrice] = useState('');
   const [loading, setLoading] = useState(false);
-  const simulate247 = useStore((s) => s.simulate247);
-
   const currentPrice = position.current_price ?? 0;
   const entry = position.avg_entry ?? 0;
   const qty = position.quantity ?? 0;
@@ -231,12 +229,8 @@ function SellModal({ position, onClose, onComplete }: {
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             Sell {position.symbol}
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-              simulate247
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-            }`}>
-              {simulate247 ? 'PAPER' : 'LIVE'}
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+              LIVE
             </span>
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-xs">

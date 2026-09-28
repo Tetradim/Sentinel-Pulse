@@ -1,173 +1,16 @@
 """Global runtime settings endpoints."""
-import os
-import secrets
 
 from fastapi import APIRouter, HTTPException
 
 import deps
-from audit_service import AuditEventType, audit_service
 from schemas import SettingsUpdate
 from shared import edge_client
 
 router = APIRouter()
 
-LIVE_TRADING_CONFIRMATION = "ENABLE LIVE TRADING"
-LIVE_TRADING_OPERATOR_SECRET_ENV = "SENTINEL_PULSE_LIVE_TRADING_OPERATOR_SECRET"
-REMOVED_LOCAL_EXECUTION_ERROR = "local_paper_execution_removed"
-
-
-def _engine_is_dry_run() -> bool:
-    is_dry_run = getattr(deps.engine, "is_dry_run", None)
-    if callable(is_dry_run):
-        return bool(is_dry_run())
-    return bool(getattr(deps.engine, "_dry_run_mode", False))
-
-
-def _candidate_live_mode(body: SettingsUpdate) -> bool:
-    return True
-
-
-def _current_live_mode() -> bool:
-    return True
-
-
-def _mode_label(is_live: bool) -> str:
-    return "live"
-
-
-def _requested_mode_fields(body: SettingsUpdate) -> list[str]:
-    return [
-        field
-        for field, value in (
-            ("simulate_24_7", body.simulate_24_7),
-            ("market_hours_only", body.market_hours_only),
-            ("live_during_market_hours", body.live_during_market_hours),
-            ("paper_after_hours", body.paper_after_hours),
-        )
-        if value is not None
-    ]
-
-
-def _configured_live_trading_operator_secret() -> str:
-    return os.getenv(LIVE_TRADING_OPERATOR_SECRET_ENV, "").strip()
-
-
-def _live_trading_operator_secret_matches(body: SettingsUpdate) -> bool:
-    expected = _configured_live_trading_operator_secret()
-    provided = (body.live_trading_operator_secret or "").strip()
-    if not expected or not provided:
-        return False
-    return secrets.compare_digest(expected, provided)
-
-
-async def _audit_mode_setting_attempt(
-    body: SettingsUpdate,
-    old_mode: str,
-    new_mode: str,
-    *,
-    success: bool,
-    error_message: str | None = None,
-):
-    await audit_service.log(
-        AuditEventType.SETTING_CHANGED,
-        {
-            "setting": "trading_mode",
-            "old_value": old_mode,
-            "new_value": new_mode,
-            "source": "settings_api",
-            "requested_fields": _requested_mode_fields(body),
-            "dry_run_enabled": _engine_is_dry_run(),
-        },
-        success=success,
-        error_message=error_message,
-    )
-
 
 @router.post("/settings")
 async def update_settings(body: SettingsUpdate):
-    if body.simulate_24_7 is True or body.paper_after_hours is True or body.live_during_market_hours is False:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": REMOVED_LOCAL_EXECUTION_ERROR,
-                "message": "Pulse local paper/demo execution is removed; runtime trades must route to assigned brokers.",
-            },
-        )
-
-    mode_fields_requested = any(
-        value is not None
-        for value in (
-            body.simulate_24_7,
-            body.market_hours_only,
-            body.live_during_market_hours,
-            body.paper_after_hours,
-        )
-    )
-    current_live_mode = _current_live_mode()
-    candidate_live_mode = _candidate_live_mode(body) if mode_fields_requested else current_live_mode
-    current_mode_label = _mode_label(current_live_mode)
-    candidate_mode_label = _mode_label(candidate_live_mode)
-
-    if mode_fields_requested and not current_live_mode and candidate_live_mode:
-        if body.live_trading_confirmation != LIVE_TRADING_CONFIRMATION:
-            await _audit_mode_setting_attempt(
-                body,
-                current_mode_label,
-                candidate_mode_label,
-                success=False,
-                error_message="live_trading_confirmation_required",
-            )
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "error": "live_trading_confirmation_required",
-                    "required_confirmation": LIVE_TRADING_CONFIRMATION,
-                },
-            )
-        if not _configured_live_trading_operator_secret():
-            await _audit_mode_setting_attempt(
-                body,
-                current_mode_label,
-                candidate_mode_label,
-                success=False,
-                error_message="live_trading_operator_secret_unconfigured",
-            )
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "error": "live_trading_operator_secret_unconfigured",
-                    "required_env": LIVE_TRADING_OPERATOR_SECRET_ENV,
-                },
-            )
-        if not _live_trading_operator_secret_matches(body):
-            await _audit_mode_setting_attempt(
-                body,
-                current_mode_label,
-                candidate_mode_label,
-                success=False,
-                error_message="live_trading_operator_secret_required",
-            )
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": "live_trading_operator_secret_required",
-                },
-            )
-
-    if mode_fields_requested:
-        deps.engine.simulate_24_7 = False
-        if body.market_hours_only is not None:
-            deps.engine.market_hours_only = body.market_hours_only
-        deps.engine.live_during_market_hours = True
-        deps.engine.paper_after_hours = False
-        await deps.engine.save_state()
-        await _audit_mode_setting_attempt(
-            body,
-            current_mode_label,
-            candidate_mode_label,
-            success=True,
-        )
-
     if body.pattern_detection_enabled is not None:
         await deps.db.settings.update_one(
             {"key": "pattern_detection_enabled"},
@@ -251,10 +94,7 @@ async def get_settings():
     account_balance = balance_doc.get("value", 0) if balance_doc else 0
     cash_reserve = round(cash_doc.get("value", 0), 2) if cash_doc else 0
     return {
-        "simulate_24_7": False,
         "market_hours_only": deps.engine.market_hours_only,
-        "live_during_market_hours": True,
-        "paper_after_hours": False,
         "trading_mode": deps.engine.get_trading_mode(),
         "telegram": tg.get("value", {}) if tg else {"bot_token": "", "chat_ids": []},
         "telegram_connected": deps.telegram_service.running,

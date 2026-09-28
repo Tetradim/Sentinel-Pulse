@@ -1,6 +1,7 @@
 """Alpaca broker adapter — API-first broker for algorithmic trading."""
 import asyncio
 import logging
+import os
 import re
 import uuid
 from .base import BrokerAdapter, BrokerOpenOrder, BrokerOrder, BrokerPosition, BrokerAccountInfo, OrderSide, OrderType
@@ -21,8 +22,13 @@ class AlpacaAdapter(BrokerAdapter):
         }
 
     def _base_url(self):
-        is_paper = str(self.config.get("paper", "true")).lower() in ("true", "1", "yes")
-        return "https://paper-api.alpaca.markets" if is_paper else "https://api.alpaca.markets"
+        configured = (
+            self.config.get("base_url")
+            or self.config.get("endpoint")
+            or os.getenv("ALPACA_ENDPOINT")
+            or os.getenv("APCA_API_BASE_URL")
+        )
+        return str(configured or "https://paper-api.alpaca.markets").rstrip("/")
 
     def _client_order_id_for(self, order: BrokerOrder) -> str:
         raw = str(order.client_order_id or order.idempotency_key or "").strip()

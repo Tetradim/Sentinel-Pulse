@@ -249,7 +249,7 @@ function TickerAllocationCard({
         })}
         {assignedBrokers.length === 0 && (
           <div className="px-4 py-2.5 text-[11px] text-muted-foreground">
-            This ticker has no broker assignment. Its buy power is still used for paper/unassigned allocation.
+            This ticker has no broker assignment. Live execution is blocked until a broker is assigned.
           </div>
         )}
       </div>

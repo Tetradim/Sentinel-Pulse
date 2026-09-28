@@ -78,7 +78,6 @@ class PulseHandoffAction(str, Enum):
 
 
 class PulseHandoffMode(str, Enum):
-    PAPER = "paper"
     LIVE = "live"
 
 

@@ -11,16 +11,13 @@ export function Header() {
   const running        = useStore((s) => s.running);
   const connected      = useStore((s) => s.connected);
   const marketOpen     = useStore((s) => s.marketOpen);
-  const tradingMode    = useStore((s) => s.tradingMode);
   const themeMode      = useStore((s) => s.themeMode);
   const accentColor    = useStore((s) => s.accentColor);
-  const setTradingMode = useStore((s) => s.setTradingMode);
   const setThemeMode   = useStore((s) => s.setThemeMode);
   const setAccentColor = useStore((s) => s.setAccentColor);
   const usSession = getUsEquitySession();
   const marketIsOpen = marketOpen || usSession.status === 'open';
   const marketStatusLabel = marketIsOpen ? 'Market Open' : usSession.label;
-  const liveTrading = tradingMode === 'live';
 
   // Keep accent class on <html> in sync
   useEffect(() => {
@@ -31,18 +28,6 @@ export function Header() {
     if (themeMode === 'light') document.documentElement.classList.add('light');
     document.documentElement.classList.add(`accent-${accentColor}`);
   }, [themeMode, accentColor]);
-
-  // The backend is authoritative because dry-run and live-hours policy also
-  // affect routing; simulate_24_7 alone cannot determine the trading mode.
-  useEffect(() => {
-    apiFetch('/api/settings')
-      .then((settings) => {
-        if (settings?.trading_mode) setTradingMode(settings.trading_mode);
-      })
-      .catch(() => {});
-  }, [setTradingMode]);
-
-  const modeLabel = liveTrading ? 'LIVE' : 'PAPER';
 
   const runBotAction = async (action: 'start' | 'stop') => {
     try {
@@ -94,10 +79,10 @@ export function Header() {
       </span>
 
       <span
-        className={`sp-pill ${liveTrading ? 'sp-pill-green' : 'sp-pill-gold'}`}
+        className="sp-pill sp-pill-green"
         data-testid="trading-mode-status"
       >
-        {modeLabel}
+        LIVE
       </span>
 
       {/* Push everything else to the right */}

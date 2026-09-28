@@ -117,12 +117,6 @@ def _handoff_response(
 
 
 def _pulse_trading_mode() -> str:
-    mode_getter = getattr(deps.engine, "get_trading_mode", None)
-    if callable(mode_getter):
-        return str(mode_getter()).strip().lower()
-
-    if bool(getattr(deps.engine, "simulate_24_7", False)) or not bool(getattr(deps.engine, "live_during_market_hours", False)):
-        return "paper"
     return "live"
 
 

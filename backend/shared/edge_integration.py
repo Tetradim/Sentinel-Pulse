@@ -33,7 +33,7 @@ async def send_order_filled_command(
     avg_entry: float = 0.0,
     position_qty: float = 0.0,
     pnl: float = 0.0,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
     broker_id: str = "",
     reason: str = "",
 ) -> bool:
@@ -48,7 +48,7 @@ async def send_order_filled_command(
         avg_entry: Average entry price.
         position_qty: Position quantity after fill.
         pnl: Realized P&L (for sells).
-        trading_mode: paper or live.
+        trading_mode: live.
         broker_id: Broker identifier.
         reason: Execution reason.
         
@@ -89,7 +89,7 @@ async def send_position_update_command(
     quantity: float,
     avg_entry: float,
     current_price: float,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
     broker_id: str = "",
 ) -> bool:
     """Send POSITION_UPDATE command to Edge.
@@ -99,7 +99,7 @@ async def send_position_update_command(
         quantity: Number of shares held.
         avg_entry: Average entry price.
         current_price: Current market price.
-        trading_mode: paper or live.
+        trading_mode: live.
         broker_id: Broker identifier.
         
     Returns:
@@ -202,9 +202,6 @@ def determine_market_state() -> str:
     Returns:
         Market state string: open, closed, pre_market, after_hours
     """
-    if deps.engine.simulate_24_7:
-        return MarketState.OPEN
-    
     if not deps.engine.is_market_open():
         return MarketState.CLOSED
     
@@ -235,7 +232,6 @@ async def send_pulse_status_command() -> bool:
         trading_mode=trading_mode,
         market_state=market_state,
         market_open=deps.engine.is_market_open(),
-        simulate_24_7=deps.engine.simulate_24_7,
         market_hours_only=deps.engine.market_hours_only,
         yfinance=deps.YF_AVAILABLE,
         telegram=deps.telegram_service.running,
@@ -390,7 +386,7 @@ async def on_trade_executed(trade_data: dict) -> None:
             avg_entry=avg_entry,
             position_qty=position_qty,
             pnl=trade_data.get("pnl", 0),
-            trading_mode=trade_data.get("trading_mode", "paper"),
+            trading_mode=trade_data.get("trading_mode", "live"),
             broker_id=trade_data.get("broker_id", ""),
             reason=trade_data.get("reason", ""),
         )

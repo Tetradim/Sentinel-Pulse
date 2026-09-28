@@ -163,7 +163,6 @@
 .sp-ticker-sym { font-family:'Fira Sans',system-ui,sans-serif; font-size:15px; font-weight:800; letter-spacing:.07em; color:#f0e8d0; flex:1; position:relative; z-index:1; }
 .sp-ticker-mode { font-size:7px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; padding:2px 6px; border-radius:3px; font-family:'Fira Code',monospace; position:relative; z-index:1; }
 .sp-mode-live   { background:rgba(45,212,160,0.1);  color:#2dd4a0; border:1px solid rgba(45,212,160,0.2); }
-.sp-mode-paper  { background:rgba(77,130,220,0.1);  color:#4d82dc; border:1px solid rgba(77,130,220,0.2); }
 .sp-mode-paused { background:rgba(200,145,10,0.1);  color:#c8920a; border:1px solid rgba(200,145,10,0.2); }
 
 .sp-ticker-body { position:relative; z-index:7; padding:9px 10px 6px; flex:1; }

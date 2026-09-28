@@ -3,8 +3,8 @@
 A working order must not remain at an obsolete price after an operator changes
 its ticker configuration. This patch fingerprints the settings used to arm each
 buy and sell. When the fingerprint changes, Pulse confirms cancellation of the
-old live order (paper orders are removed locally), persists the reset state, and
-lets the passive evaluator immediately arm the replacement.
+old live order, persists the reset state, and lets the passive evaluator
+immediately arm the replacement.
 """
 
 from __future__ import annotations
@@ -68,8 +68,6 @@ def _same_key(stored: Any, current: tuple) -> bool:
 
 
 async def _cancel_for_replace(self, ticker_doc: dict, order: dict, label: str) -> bool:
-    if passive._is_paper(self, ticker_doc):
-        return True
     broker_id, _ = passive._active_broker(ticker_doc)
     if not broker_id:
         deps.logger.error("Passive %s replacement blocked: no single active broker", label)

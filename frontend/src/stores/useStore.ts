@@ -61,7 +61,7 @@ export interface TickerConfig {
   passive_order_ttl_seconds: number;
   passive_cancel_on_partial: boolean;
   passive_fractional_shares: boolean;
-  passive_paper_min_touches: number;
+  passive_quote_min_touches: number;
 }
 
 /* Strategy metadata + JSON schema from /api/strategies/registry */
@@ -102,7 +102,7 @@ export interface TradeLog {
   trail_trigger: number;    // trailing stop trigger level
   trail_value: number;      // trailing % or $ value
   trail_mode: string;       // PERCENT or DOLLAR for trailing
-  trading_mode: string;     // "paper" or "live"
+  trading_mode: string;
   broker_results: any[];    // per-broker execution results
 }
 
@@ -168,14 +168,6 @@ interface BotState {
   // Active tab
   activeTab: string;
   setActiveTab: (tab: string) => void;
-
-  // Settings
-  simulate247: boolean;
-  setSimulate247: (s: boolean) => void;
-  liveDuringMarketHours: boolean;
-  paperAfterHours: boolean;
-  setLiveDuringMarketHours: (v: boolean) => void;
-  setPaperAfterHours: (v: boolean) => void;
 
   // Global daily drawdown limit (portfolio-level circuit breaker)
   globalDailyDrawdownEnabled: boolean;
@@ -321,13 +313,6 @@ export const useStore = create<BotState>((set) => ({
   activeTab: 'watchlist',
   setActiveTab: (activeTab) => set({ activeTab }),
 
-  simulate247: false,
-  setSimulate247: (simulate247) => set({ simulate247 }),
-  liveDuringMarketHours: false,
-  paperAfterHours: false,
-  setLiveDuringMarketHours: (liveDuringMarketHours) => set({ liveDuringMarketHours }),
-  setPaperAfterHours: (paperAfterHours) => set({ paperAfterHours }),
-  
   // Global daily drawdown limit (portfolio-level circuit breaker)
   globalDailyDrawdownEnabled: false,
   globalDailyDrawdownLimit: 3, // default 3%
@@ -352,7 +337,7 @@ export const useStore = create<BotState>((set) => ({
   setIncrementStep: (incrementStep) => set({ incrementStep }),
   setDecrementStep: (decrementStep) => set({ decrementStep }),
 
-  tradingMode: 'paper',
+  tradingMode: 'live',
   setTradingMode: (tradingMode) => set({ tradingMode }),
 
   currencyDisplay: 'usd',

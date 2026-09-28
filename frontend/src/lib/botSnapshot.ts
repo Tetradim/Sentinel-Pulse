@@ -17,13 +17,8 @@ export function applyBotSnapshot(snapshot: any) {
   }
   if (snapshot.increment_step !== undefined) store.setIncrementStep(snapshot.increment_step);
   if (snapshot.decrement_step !== undefined) store.setDecrementStep(snapshot.decrement_step);
-  if (snapshot.simulate_24_7 !== undefined) store.setSimulate247(snapshot.simulate_24_7);
-  if (snapshot.live_during_market_hours !== undefined) store.setLiveDuringMarketHours(snapshot.live_during_market_hours);
-  if (snapshot.paper_after_hours !== undefined) store.setPaperAfterHours(snapshot.paper_after_hours);
   if (snapshot.running !== undefined) store.setRunning(snapshot.running);
   if (snapshot.paused !== undefined) store.setPaused(snapshot.paused);
   if (snapshot.market_open !== undefined) store.setMarketOpen(snapshot.market_open);
-  if (snapshot.simulate_24_7 !== undefined) {
-    store.setTradingMode(snapshot.simulate_24_7 ? 'paper' : 'live');
-  }
+  store.setTradingMode('live');
 }

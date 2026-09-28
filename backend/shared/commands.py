@@ -23,7 +23,6 @@ class CommandType(str, Enum):
 
 class TradingMode(str, Enum):
     """Trading mode indicators."""
-    PAPER = "paper"
     LIVE = "live"
 
 
@@ -72,7 +71,7 @@ class OrderFilled(BaseModel):
     pnl_percent: float = Field(default=0.0, description="P&L as percentage")
     
     # Trading context
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     broker_id: str = Field(default="", description="Broker identifier")
     reason: str = Field(default="", description="Execution reason (signal, trailing, etc.)")
     
@@ -102,7 +101,7 @@ class PositionUpdate(BaseModel):
     unrealized_pnl_percent: float = Field(description="Unrealized P&L percentage")
     
     # Trading context
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     broker_id: str = Field(default="", description="Broker identifier")
     
     # Metadata
@@ -133,7 +132,7 @@ class AccountUpdate(BaseModel):
     positions: List[Dict[str, Any]] = Field(default_factory=list, description="Position details")
     
     # Trading context
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     
     # Metadata
     source: str = Field(default="pulse", description="Source system")
@@ -155,12 +154,11 @@ class PulseStatus(BaseModel):
     paused: bool = Field(description="Whether trading is paused")
     
     # Mode
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     market_state: str = Field(default=MarketState.CLOSED, description="open, closed, pre_market, after_hours")
     market_open: bool = Field(description="Whether market is currently open")
     
     # Engine details
-    simulate_24_7: bool = Field(description="Whether 24/7 simulation is enabled")
     market_hours_only: bool = Field(description="Whether trading is market hours only")
     
     # Multi-market support (NEW)
@@ -196,7 +194,7 @@ class BrokerStatus(BaseModel):
     last_heartbeat: str = Field(default="", description="Last successful heartbeat timestamp")
     
     # Trading mode context
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     
     # Metadata
     source: str = Field(default="pulse", description="Source system")
@@ -230,7 +228,7 @@ class AutoStopTriggered(BaseModel):
     stop_is_percent: bool = Field(description="Whether stop threshold is a percentage")
     
     # Trading context
-    trading_mode: str = Field(default=TradingMode.PAPER, description="paper or live")
+    trading_mode: str = Field(default=TradingMode.LIVE, description="live")
     broker_id: str = Field(default="", description="Broker identifier")
     reason: str = Field(default="", description="Detailed reason")
     

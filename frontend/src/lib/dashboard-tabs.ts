@@ -1,6 +1,5 @@
 export const DASHBOARD_TAB_IDS = [
   'watchlist',
-  'test-lab',
   'portfolio',
   'positions',
   'history',
@@ -29,7 +28,7 @@ export const DASHBOARD_TAB_GROUPS = [
     id: 'trading',
     label: 'Trading',
     defaultTab: 'watchlist',
-    tabs: ['watchlist', 'test-lab', 'portfolio', 'positions', 'orders', 'history'],
+    tabs: ['watchlist', 'portfolio', 'positions', 'orders', 'history'],
   },
   {
     id: 'risk',

@@ -86,7 +86,7 @@ class TickerConfig(BaseModel):
     passive_max_hold_seconds: int = Field(0, ge=0, le=2592000)
     passive_cancel_on_partial: bool = True
     passive_fractional_shares: bool = False
-    passive_paper_min_touches: int = Field(2, ge=1, le=100)
+    passive_quote_min_touches: int = Field(2, ge=1, le=100)
 
     @model_validator(mode="after")
     def validate_price_modes(self):
@@ -182,7 +182,7 @@ class TickerUpdate(BaseModel):
     passive_max_hold_seconds: Optional[int] = None
     passive_cancel_on_partial: Optional[bool] = None
     passive_fractional_shares: Optional[bool] = None
-    passive_paper_min_touches: Optional[int] = None
+    passive_quote_min_touches: Optional[int] = None
 
 
 class TradeRecord(BaseModel):
@@ -208,7 +208,7 @@ class TradeRecord(BaseModel):
     trail_trigger: float = 0.0
     trail_value: float = 0.0
     trail_mode: str = ""
-    trading_mode: str = "paper"
+    trading_mode: str = "live"
     broker_results: list = []
 
 
@@ -234,17 +234,11 @@ class GlobalDailyDrawdownConfig(BaseModel):
 
 class SettingsUpdate(BaseModel):
     telegram: Optional[TelegramConfig] = None
-    simulate_24_7: Optional[bool] = None
-    live_trading_confirmation: Optional[str] = Field(None, max_length=64)
-    live_trading_operator_secret: Optional[str] = Field(None, max_length=512)
     increment_step: Optional[float] = None
     decrement_step: Optional[float] = None
     account_balance: Optional[float] = None
     global_daily_drawdown: Optional[GlobalDailyDrawdownConfig] = None
     market_hours_only: Optional[bool] = None
-    # Auto mode switching
-    live_during_market_hours: Optional[bool] = None
-    paper_after_hours: Optional[bool] = None
     # Pattern detection (Pulse → Edge)
     pattern_detection_enabled: Optional[bool] = None
     pattern_min_confidence: Optional[float] = None

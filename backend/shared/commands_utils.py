@@ -35,7 +35,7 @@ def build_order_filled(
     position_qty: float = 0.0,
     pnl: float = 0.0,
     pnl_percent: float = 0.0,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
     broker_id: str = "",
     reason: str = "",
     order_id: str = "",
@@ -53,7 +53,7 @@ def build_order_filled(
         position_qty: Position quantity after fill.
         pnl: Realized P&L (for sells).
         pnl_percent: P&L as percentage.
-        trading_mode: paper or live.
+        trading_mode: live.
         broker_id: Broker identifier.
         reason: Execution reason.
         order_id: Broker order ID.
@@ -106,7 +106,7 @@ def build_order_filled_from_trade(
         position_qty=position_qty,
         pnl=trade.get("pnl", 0),
         pnl_percent=0.0,  # Calculate separately if needed
-        trading_mode=trade.get("trading_mode", "paper"),
+        trading_mode=trade.get("trading_mode", "live"),
         broker_id=trade.get("broker_id", ""),
         reason=trade.get("reason", ""),
     )
@@ -119,7 +119,7 @@ def build_position_update(
     quantity: float,
     avg_entry: float,
     current_price: float,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
     broker_id: str = "",
 ) -> PositionUpdate:
     """Build a POSITION_UPDATE command.
@@ -129,7 +129,7 @@ def build_position_update(
         quantity: Number of shares held.
         avg_entry: Average entry price.
         current_price: Current market price.
-        trading_mode: paper or live.
+        trading_mode: live.
         broker_id: Broker identifier.
         
     Returns:
@@ -162,7 +162,7 @@ def build_position_update_from_engine(
     symbol: str,
     position: Dict[str, float],
     current_price: float,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
 ) -> PositionUpdate:
     """Build a POSITION_UPDATE from engine position data.
     
@@ -170,7 +170,7 @@ def build_position_update_from_engine(
         symbol: Ticker symbol.
         position: Position dict from engine (with qty, avg_entry keys).
         current_price: Current market price.
-        trading_mode: paper or live.
+        trading_mode: live.
         
     Returns:
         PositionUpdate command document.
@@ -195,7 +195,7 @@ def build_account_update(
     total_realized_pnl: float,
     total_unrealized_pnl: float,
     positions: List[Dict[str, Any]],
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
 ) -> AccountUpdate:
     """Build an ACCOUNT_UPDATE command.
     
@@ -207,7 +207,7 @@ def build_account_update(
         total_realized_pnl: Total realized P&L.
         total_unrealized_pnl: Total unrealized P&L.
         positions: List of position dicts.
-        trading_mode: paper or live.
+        trading_mode: live.
         
     Returns:
         AccountUpdate command document.
@@ -233,7 +233,6 @@ def build_pulse_status(
     trading_mode: str,
     market_state: str,
     market_open: bool,
-    simulate_24_7: bool = False,
     market_hours_only: bool = True,
     yfinance: bool = False,
     telegram: bool = False,
@@ -246,10 +245,9 @@ def build_pulse_status(
     Args:
         running: Whether trading loop is running.
         paused: Whether trading is paused.
-        trading_mode: paper or live.
+        trading_mode: live.
         market_state: open, closed, pre_market, after_hours.
         market_open: Whether market is currently open.
-        simulate_24_7: Whether 24/7 simulation is enabled.
         market_hours_only: Whether trading is market hours only.
         yfinance: Whether yfinance is available.
         telegram: Whether Telegram is running.
@@ -266,7 +264,6 @@ def build_pulse_status(
         trading_mode=trading_mode,
         market_state=market_state,
         market_open=market_open,
-        simulate_24_7=simulate_24_7,
         market_hours_only=market_hours_only,
         yfinance=yfinance,
         telegram=telegram,
@@ -284,7 +281,7 @@ def build_broker_status(
     state: str,
     connected: bool,
     error_message: str = "",
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
 ) -> BrokerStatus:
     """Build a BROKER_STATUS command.
     
@@ -294,7 +291,7 @@ def build_broker_status(
         state: connected, disconnected, or error.
         connected: Whether broker is connected.
         error_message: Error message if disconnected/error.
-        trading_mode: paper or live.
+        trading_mode: live.
         
     Returns:
         BrokerStatus command document.
@@ -321,7 +318,7 @@ def build_auto_stop_triggered(
     avg_entry: float,
     stop_threshold: float,
     stop_is_percent: bool,
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
     broker_id: str = "",
     reason: str = "",
 ) -> AutoStopTriggered:
@@ -336,7 +333,7 @@ def build_auto_stop_triggered(
         avg_entry: Average entry price.
         stop_threshold: Stop threshold value.
         stop_is_percent: Whether stop threshold is a percentage.
-        trading_mode: paper or live.
+        trading_mode: live.
         broker_id: Broker identifier.
         reason: Detailed reason.
         
@@ -407,14 +404,14 @@ def serialize_command_for_json(command: Any) -> Dict[str, Any]:
 def batch_position_updates(
     positions: Dict[str, Dict[str, float]],
     prices: Dict[str, float],
-    trading_mode: str = "paper",
+    trading_mode: str = "live",
 ) -> List[PositionUpdate]:
     """Build batch position updates for multiple positions.
     
     Args:
         positions: Dict mapping symbol -> position data (qty, avg_entry).
         prices: Dict mapping symbol -> current price.
-        trading_mode: paper or live.
+        trading_mode: live.
         
     Returns:
         List of PositionUpdate commands.

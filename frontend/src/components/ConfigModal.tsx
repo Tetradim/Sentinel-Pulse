@@ -320,7 +320,7 @@ function PassiveRangeTab({ ticker, onChange, incStep, decStep }: TabProps) {
             <SteppedInput label="Price Tick ($)" value={ticker.price_tick_size ?? 0} onChange={(v) => onChange('price_tick_size', v)} min={0} max={1000} incrementStep={0.0001} decrementStep={0.0001} />
             <SteppedInput label="Re-entry Delay (s)" value={ticker.passive_reentry_seconds ?? 0} onChange={(v) => onChange('passive_reentry_seconds', Math.round(v))} min={0} max={86400} incrementStep={1} decrementStep={1} />
             <SteppedInput label="Buy Order TTL (s)" value={ticker.passive_order_ttl_seconds ?? 300} onChange={(v) => onChange('passive_order_ttl_seconds', Math.round(v))} min={0} max={86400} incrementStep={5} decrementStep={5} />
-            <SteppedInput label="Paper Touches" value={ticker.passive_paper_min_touches ?? 2} onChange={(v) => onChange('passive_paper_min_touches', Math.round(v))} min={1} max={100} incrementStep={1} decrementStep={1} />
+            <SteppedInput label="Quote Touches" value={ticker.passive_quote_min_touches ?? 2} onChange={(v) => onChange('passive_quote_min_touches', Math.round(v))} min={1} max={100} incrementStep={1} decrementStep={1} />
             <ConfigToggle label="Cancel remainder on partial fill" checked={ticker.passive_cancel_on_partial ?? true} onChange={(v) => onChange('passive_cancel_on_partial', v)} />
             <ConfigToggle label="Allow fractional shares" checked={ticker.passive_fractional_shares ?? false} onChange={(v) => onChange('passive_fractional_shares', v)} />
           </ConfigSection>
@@ -349,11 +349,11 @@ function PassiveRangeTab({ ticker, onChange, incStep, decStep }: TabProps) {
           )}
           {(ticker.broker_ids?.length ?? 0) > 1 && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[10px] text-red-300">
-              Initial live passive mode requires exactly one positively allocated broker. Paper mode can run without a broker.
+              Initial live passive mode requires exactly one positively allocated broker.
             </div>
           )}
           <p className="text-[9px] text-muted-foreground/70">
-            The stop configured in Risk remains mandatory range-break protection. Paper fills require bid/ask confirmation when available but do not model exchange queue priority.
+            The stop configured in Risk remains mandatory range-break protection. Live fills are confirmed by the assigned broker.
           </p>
         </>
       )}

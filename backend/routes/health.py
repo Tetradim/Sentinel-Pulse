@@ -135,10 +135,6 @@ async def prometheus_metrics():
     lines.append("# TYPE sentinel_pulse_running gauge")
     lines.append(f"sentinel_pulse_running {1 if deps.engine.running else 0}")
 
-    lines.append("# HELP sentinel_pulse_simulate_24_7 Whether in paper/simulation mode.")
-    lines.append("# TYPE sentinel_pulse_simulate_24_7 gauge")
-    lines.append(f"sentinel_pulse_simulate_24_7 {1 if deps.engine.simulate_24_7 else 0}")
-
     lines.append("# HELP sentinel_pulse_paused Whether the bot engine is paused.")
     lines.append("# TYPE sentinel_pulse_paused gauge")
     lines.append(f"sentinel_pulse_paused {1 if deps.engine.paused else 0}")

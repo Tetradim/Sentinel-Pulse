@@ -54,7 +54,7 @@ def _normalise_edge_action(payload: dict[str, Any]) -> PulseHandoffRequest:
         action=action,
         confidence=float(payload.get("confidence", 1.0)),
         reason=str(payload.get("reason") or "cross_bot_event_bus"),
-        mode=str(payload.get("mode") or "paper"),
+        mode=str(payload.get("mode") or "live"),
         orb_session=str(payload.get("orb_session") or "event_bus"),
         stop_type=payload.get("stop_type"),
         trailing_percent=payload.get("trailing_percent"),

@@ -55,8 +55,7 @@ class EnvironmentConfig(BaseModel):
     
     # Features
     features: Dict[str, bool] = {
-        "paper_trading": True,
-        "live_trading": False,
+        "live_trading": True,
         "telegram": False,
         "opentelemetry": True,
     }
@@ -94,7 +93,7 @@ def load_config() -> EnvironmentConfig:
     if env == Environment.LOCAL:
         _config.db_host = "localhost"
         _config.redis_host = "localhost"
-        _config.features["live_trading"] = False
+        _config.features["live_trading"] = True
         
     elif env == Environment.STAGING:
         _config.db_host = os.getenv("DB_HOST", "staging-mongo.internal")
@@ -107,8 +106,7 @@ def load_config() -> EnvironmentConfig:
         _config.redis_host = os.getenv("REDIS_HOST", "prod-redis.internal")
         _config.debug = False
         _config.log_level = "WARNING"
-        _config.features["paper_trading"] = True
-        _config.features["live_trading"] = True  # Enable both for beta testing
+        _config.features["live_trading"] = True
     
     # Load from environment variables (highest priority)
     _config.db_host = os.getenv("DB_HOST", _config.db_host)
@@ -199,9 +197,6 @@ def validate_config() -> list[str]:
     if config.environment == Environment.PRODUCTION:
         if config.debug:
             issues.append("debug must be False in production")
-        
-        if config.features.get("paper_trading"):
-            issues.append("paper_trading should be disabled in production")
         
         if not config.cors_origins:
             issues.append("cors_origins must be configured in production")

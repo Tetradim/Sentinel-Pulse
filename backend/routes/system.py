@@ -70,7 +70,7 @@ async def get_release_preflight():
         "Broker connection",
         "pass" if connected_brokers else "warn",
         f"{connected_brokers} broker adapter(s) connected",
-        "Connect a broker before live trading. Paper-only testing can continue without one.",
+        "Connect a broker before enabling automated order flow.",
     ))
 
     has_price_source = bool(deps.YF_AVAILABLE or connected_brokers)

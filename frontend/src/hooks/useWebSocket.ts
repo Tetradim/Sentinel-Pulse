@@ -55,9 +55,6 @@ function handleMessage(event: MessageEvent) {
       if (data.account_balance !== undefined) {
         store.setAccountBalance(data.account_balance, data.allocated ?? 0, data.available ?? 0);
       }
-      if (data.simulate_24_7 !== undefined) store.setSimulate247(data.simulate_24_7);
-      if (data.live_during_market_hours !== undefined) store.setLiveDuringMarketHours(data.live_during_market_hours);
-      if (data.paper_after_hours !== undefined) store.setPaperAfterHours(data.paper_after_hours);
       store.setPaused(data.paused ?? false);
       store.setRunning(data.running ?? false);
       store.setMarketOpen(data.market_open ?? false);
@@ -76,9 +73,6 @@ function handleMessage(event: MessageEvent) {
       if (data.account_balance !== undefined) {
         store.setAccountBalance(data.account_balance, data.allocated ?? 0, data.available ?? 0);
       }
-      if (data.simulate_24_7 !== undefined) store.setSimulate247(data.simulate_24_7);
-      if (data.live_during_market_hours !== undefined) store.setLiveDuringMarketHours(data.live_during_market_hours);
-      if (data.paper_after_hours !== undefined) store.setPaperAfterHours(data.paper_after_hours);
       store.setPaused(data.paused ?? store.paused);
       store.setRunning(data.running ?? store.running);
       store.setMarketOpen(data.market_open ?? store.marketOpen);
@@ -134,9 +128,8 @@ function handleMessage(event: MessageEvent) {
     }
 
     if (data.type === 'MODE_SWITCH') {
-      uiLog.ws('mode_switch', { simulate_24_7: data.simulate_24_7, trading_mode: data.trading_mode });
-      if (data.simulate_24_7 !== undefined) store.setSimulate247(data.simulate_24_7);
-      if (data.trading_mode) store.setTradingMode(data.trading_mode);
+      uiLog.ws('mode_switch', { trading_mode: 'live' });
+      store.setTradingMode('live');
     }
 
     if (data.type === 'BROKER_FAILED') {

@@ -45,67 +45,53 @@ async def _forced_exit(
     if quantity <= 0 or entry <= 0:
         return False
 
-    is_paper = passive._is_paper(self, ticker_doc)
-    broker_result = {
-        "broker_id": "paper",
-        "broker_order_id": f"paper-{exit_reason}:{state.get('cycle_id', symbol)}",
-        "order_id": "",
-        "status": "filled",
-        "filled_price": current_price,
-        "filled_quantity": quantity,
-        "error": "",
-    }
-    exit_price = current_price
-    exit_quantity = quantity
-
-    if not is_paper:
-        broker_id, _ = passive._active_broker(ticker_doc)
-        if not broker_id:
-            return False
-        sell_order = state.get("sell_order") or {}
-        if sell_order.get("broker_order_id"):
-            cancelled = await passive._cancel_live_order(self, broker_id, sell_order)
-            if not cancelled:
-                deps.logger.error(
-                    "Passive %s for %s blocked: resting sell cancellation was not confirmed",
-                    exit_reason,
-                    symbol,
-                )
-                return False
-
-        try:
-            results = await self._place_live_order_or_raise(
-                sym=symbol,
-                broker_ids=[broker_id],
-                broker_allocs=ticker_doc.get("broker_allocations") or {},
-                action_label=action_label,
-                order_template={
-                    "symbol": symbol,
-                    "side": "SELL",
-                    "order_type": "MARKET",
-                    "price": current_price,
-                    "quantity": quantity,
-                },
-            )
-        except LiveOrderExecutionError as exc:
-            deps.logger.error("Passive %s execution failed for %s: %s", exit_reason, symbol, exc)
-            state.update({"phase": "LONG", "sell_order": None})
-            await passive._persist_state(self, state)
-            return False
-        if not results:
-            return False
-        broker_result = dict(results[0])
-        exit_quantity = _number(
-            broker_result.get("filled_quantity") or broker_result.get("filled_qty")
-        )
-        exit_price = _number(
-            broker_result.get("filled_price") or broker_result.get("avg_fill_price")
-        )
-        if exit_quantity <= 0 or exit_price <= 0:
+    broker_id, _ = passive._active_broker(ticker_doc)
+    if not broker_id:
+        return False
+    sell_order = state.get("sell_order") or {}
+    if sell_order.get("broker_order_id"):
+        cancelled = await passive._cancel_live_order(self, broker_id, sell_order)
+        if not cancelled:
             deps.logger.error(
-                "Passive %s for %s lacked terminal fill evidence", exit_reason, symbol
+                "Passive %s for %s blocked: resting sell cancellation was not confirmed",
+                exit_reason,
+                symbol,
             )
             return False
+
+    try:
+        results = await self._place_live_order_or_raise(
+            sym=symbol,
+            broker_ids=[broker_id],
+            broker_allocs=ticker_doc.get("broker_allocations") or {},
+            action_label=action_label,
+            order_template={
+                "symbol": symbol,
+                "side": "SELL",
+                "order_type": "MARKET",
+                "price": current_price,
+                "quantity": quantity,
+            },
+        )
+    except LiveOrderExecutionError as exc:
+        deps.logger.error("Passive %s execution failed for %s: %s", exit_reason, symbol, exc)
+        state.update({"phase": "LONG", "sell_order": None})
+        await passive._persist_state(self, state)
+        return False
+    if not results:
+        return False
+    broker_result = dict(results[0])
+    exit_quantity = _number(
+        broker_result.get("filled_quantity") or broker_result.get("filled_qty")
+    )
+    exit_price = _number(
+        broker_result.get("filled_price") or broker_result.get("avg_fill_price")
+    )
+    if exit_quantity <= 0 or exit_price <= 0:
+        deps.logger.error(
+            "Passive %s for %s lacked terminal fill evidence", exit_reason, symbol
+        )
+        return False
 
     sold = min(quantity, exit_quantity)
     pnl = (exit_price - entry) * sold
@@ -124,7 +110,7 @@ async def _forced_exit(
         buy_power=_number(ticker_doc.get("base_power")),
         stop_target=target_price if exit_reason == "stop" else 0.0,
         trading_mode="live",
-        broker_results=[] if is_paper else [broker_result],
+        broker_results=[broker_result],
     )
     await self._record_trade(trade)
     await self._update_profit(symbol, round(pnl, 2), ticker_doc.get("compound_profits", True))

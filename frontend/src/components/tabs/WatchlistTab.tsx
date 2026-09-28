@@ -20,11 +20,6 @@ import {
 import { apiFetch } from '@/lib/api';
 import { applyBotSnapshot } from '@/lib/botSnapshot';
 import { uiLog } from '@/lib/clientLogger';
-import {
-  isCandidateLiveTradingMode,
-  isLiveTradingMode,
-  requestLiveTradingPayload,
-} from '@/lib/liveTradingConfirmation';
 import { getUsEquitySession } from '@/lib/market-session';
 import { toast } from 'sonner';
 
@@ -101,9 +96,6 @@ export function WatchlistTab() {
   const [mktColors, setMktColors]       = useState(DEFAULT_MKT_COLORS);
   const [toggles, setToggles]           = useState({ stopLoss: true });
 
-  const simulate247           = useStore((s) => s.simulate247);
-  const liveDuringMarketHours = useStore((s) => s.liveDuringMarketHours);
-  const paperAfterHours       = useStore((s) => s.paperAfterHours);
   const trades                = useStore((s) => s.trades);
   const running               = useStore((s) => s.running);
   const marketOpen            = useStore((s) => s.marketOpen);
@@ -181,76 +173,6 @@ export function WatchlistTab() {
     }
   }, [refreshBotSnapshot]);
 
-  const setPaperMode = useCallback(async (checked: boolean) => {
-    const state = useStore.getState();
-    const currentMode = {
-      simulate247: state.simulate247,
-      liveDuringMarketHours: state.liveDuringMarketHours,
-    };
-    const payload = requestLiveTradingPayload(currentMode, { simulate_24_7: checked });
-    if (!payload) {
-      toast.error('Live trading confirmation cancelled. Mode was not changed.');
-      return;
-    }
-    const previous = currentMode.simulate247;
-    const previousLiveMode = isLiveTradingMode(currentMode);
-    const nextLiveMode = isCandidateLiveTradingMode(currentMode, payload);
-    useStore.getState().setSimulate247(checked);
-    useStore.getState().setTradingMode(nextLiveMode ? 'live' : 'paper');
-    try {
-      await apiFetch('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-    } catch (error: any) {
-      useStore.getState().setSimulate247(previous);
-      useStore.getState().setTradingMode(previousLiveMode ? 'live' : 'paper');
-      toast.error(error.message || 'Failed to update trading mode');
-    }
-  }, []);
-
-  const setLiveMarketHours = useCallback(async (checked: boolean) => {
-    const state = useStore.getState();
-    const currentMode = {
-      simulate247: state.simulate247,
-      liveDuringMarketHours: state.liveDuringMarketHours,
-    };
-    const payload = requestLiveTradingPayload(currentMode, { live_during_market_hours: checked });
-    if (!payload) {
-      toast.error('Live trading confirmation cancelled. Market-hours mode was not changed.');
-      return;
-    }
-    const previous = currentMode.liveDuringMarketHours;
-    const previousLiveMode = isLiveTradingMode(currentMode);
-    const nextLiveMode = isCandidateLiveTradingMode(currentMode, payload);
-    useStore.getState().setLiveDuringMarketHours(checked);
-    useStore.getState().setTradingMode(nextLiveMode ? 'live' : 'paper');
-    try {
-      await apiFetch('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-    } catch (error: any) {
-      useStore.getState().setLiveDuringMarketHours(previous);
-      useStore.getState().setTradingMode(previousLiveMode ? 'live' : 'paper');
-      toast.error(error.message || 'Failed to update live market-hours mode');
-    }
-  }, []);
-
-  const setPaperAfterHours = useCallback(async (checked: boolean) => {
-    const previous = useStore.getState().paperAfterHours;
-    useStore.getState().setPaperAfterHours(checked);
-    try {
-      await apiFetch('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify({ paper_after_hours: checked }),
-      });
-    } catch (error: any) {
-      useStore.getState().setPaperAfterHours(previous);
-      toast.error(error.message || 'Failed to update paper after-hours mode');
-    }
-  }, []);
-
   const sortedSymbols = Object.values(tickers)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((t) => t.symbol);
@@ -259,7 +181,7 @@ export function WatchlistTab() {
   function tunnelColor(symbol: string): 'gold' | 'red' | 'amber' | 'blue' {
     const t = tickers[symbol];
     if (!t?.enabled) return 'amber';
-    if (t.strategy === 'paper' || !t.enabled) return 'blue';
+    if (!t.enabled) return 'blue';
     const pnl = profits[symbol] ?? 0;
     if (pnl < 0) return 'red';
     return 'gold';
@@ -452,16 +374,12 @@ export function WatchlistTab() {
             <div>
               <div className="sp-ctrl-lbl">Trading Mode</div>
               <div className="sp-ctrl-btns">
-                <button className="sp-ctrl-btn sp-btn-pause" onClick={() => setPaperMode(true)}>Paper</button>
-                <button className="sp-ctrl-btn sp-btn-stop"  onClick={() => setPaperMode(false)}>Live</button>
+                <button className="sp-ctrl-btn sp-btn-start" disabled>Live Broker Routing</button>
               </div>
             </div>
           </div>
           <div className="sp-toggle-list">
             {[
-              { key: 'sim247',     label: 'Simulate 24/7',           onToggle: setPaperMode,          val: simulate247            },
-              { key: 'liveMarket', label: 'Live During Market Hours', onToggle: setLiveMarketHours,    val: liveDuringMarketHours  },
-              { key: 'paperAfter', label: 'Paper After Hours',        onToggle: setPaperAfterHours,    val: paperAfterHours        },
               { key: 'stopLoss',   label: 'Stop Loss Enabled',        onToggle: null,                  val: toggles.stopLoss       },
             ].map(({ key, label, onToggle, val }) => (
               <div className="sp-toggle-row" key={key}>

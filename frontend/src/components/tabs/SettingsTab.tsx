@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
-import { requestLiveTradingPayload } from '@/lib/liveTradingConfirmation';
 import { useStore } from '@/stores/useStore';
 import { AccountBalanceSection } from '@/components/settings/AccountBalanceSection';
 import { BrokerAllocationsSection } from '@/components/settings/BrokerAllocationsSection';
@@ -49,9 +48,6 @@ export function SettingsTab() {
           setBalanceText(String(data.account_balance));
           useStore.getState().setAccountBalance(data.account_balance, data.allocated ?? 0, data.available ?? 0);
         }
-        useStore.getState().setSimulate247(data.simulate_24_7 || false);
-        useStore.getState().setLiveDuringMarketHours(data.live_during_market_hours || false);
-        useStore.getState().setPaperAfterHours(data.paper_after_hours || false);
         useStore.getState().setIncrementStep(data.increment_step ?? 0.5);
         useStore.getState().setDecrementStep(data.decrement_step ?? 0.5);
         if (data.global_daily_drawdown !== undefined) {
@@ -115,10 +111,8 @@ export function SettingsTab() {
     setSaving(true);
     try {
       const balanceToSave = balanceValue ?? parseFloat(balanceText) ?? 0;
-      const store = useStore.getState();
       const settingsPayload = {
         telegram: { bot_token: token, chat_ids: chatIds },
-        simulate_24_7: store.simulate247,
         increment_step: incStep,
         decrement_step: decStep,
         account_balance: balanceToSave,
@@ -129,20 +123,9 @@ export function SettingsTab() {
         },
         edge_retry_max_attempts: edgeRetryAttempts,
       };
-      const confirmedPayload = requestLiveTradingPayload(
-        {
-          simulate247: store.simulate247,
-          liveDuringMarketHours: store.liveDuringMarketHours,
-        },
-        settingsPayload,
-      );
-      if (!confirmedPayload) {
-        toast.error('Live trading confirmation cancelled. Settings were not saved.');
-        return;
-      }
       const res = await apiFetch('/api/settings', {
         method: 'POST',
-        body: JSON.stringify(confirmedPayload),
+        body: JSON.stringify(settingsPayload),
       });
       setBalanceValue(balanceToSave);
       setBalanceText(String(balanceToSave));
